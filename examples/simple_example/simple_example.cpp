@@ -1,7 +1,7 @@
 /*
   simple_example : print file create
 
-  --dir-------monitor.exe
+  --dir-------simple_example.exe
          |----sewindows.sys
          |----sewindows.dll
 */
