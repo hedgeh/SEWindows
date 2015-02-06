@@ -2,23 +2,24 @@
 在Windows上建立一个开源的强制访问控制框架及SDK。使Windows平台的应用开发者，可以不用关心操作系统底层技术，只用进行简单的SDK调用或配置就可以保护自己的应用程序。
 
 ## 跟我学如何使用SEWindows SDK
-		完整示例可以参照：
+完整示例可以参照：
 		https://github.com/hedgeh/SEWindows/blob/develop/examples/simple_example/simple_example.cpp
-  
 ### 第一步：
 		包含头文件"inc/sewindows.h"，并从sewindows.dll中导出接口函数，这个过程就不用细说了，实在不会的可以参照例子。（一共只有三个函数）  
 		从dll中导出了初始化函数monitor_sewin_init，设置函数monitor_sewin_setoption，注册回调的函数monitor_sewin_register_opt。
 
 ### 第二步：
-  初始化SDK
+		初始化SDK
 		BOOLEAN bret = monitor_sewin_init();
 
 ### 第三步：
-		设置SDK，设置函数有两个参数：
-		第一个参数表示SDK的工作模式，在SEWIN_MODE_INTERCEPT模式下，SDK会拦截操作。在SEWIN_MODE_NOTIFY模式下，SDK只是通知，不会对操作进行拦截。
-		第二个参数表示要拦截的对象，SEWIN_TYPE_FILE，SEWIN_TYPE_FROC，SEWIN_TYPE_REG分别对应文件、进程、注册表。这个参数支持或操作，即可以设置成下面这样：SEWIN_TYPE_FILE|SEWIN_TYPE_FROC|SEWIN_TYPE_REG
-		我们的示例中只是设置了“对文件的操作进行通知”
-		monitor_sewin_setoption(SEWIN_MODE_NOTIFY, SEWIN_TYPE_FILE);
+		
+	设置SDK，设置函数有两个参数：
+	第一个参数表示SDK的工作模式，在SEWIN_MODE_INTERCEPT模式下，SDK会拦截操作。在SEWIN_MODE_NOTIFY模式下，SDK只是通知，不会对操作进行拦截。
+	第二个参数表示要拦截的对象，SEWIN_TYPE_FILE，SEWIN_TYPE_FROC，SEWIN_TYPE_REG分别对应文件、进程、注册表。这个参数支持或操作，即可以设置成下面这样：SEWIN_TYPE_FILE|SEWIN_TYPE_FROC|SEWIN_TYPE_REG
+	我们的示例中只是设置了“对文件的操作进行通知”
+	monitor_sewin_setoption(SEWIN_MODE_NOTIFY, SEWIN_TYPE_FILE);
+		
 
 ### 第四步：
 		注册回调函数：
