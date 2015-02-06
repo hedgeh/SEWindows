@@ -51,7 +51,6 @@ struct sewin_operations {
     BOOLEAN(*dir_create)            (WCHAR *user_name, WCHAR *process, WCHAR *dir_path);
     BOOLEAN(*dir_unlink)            (WCHAR *user_name, WCHAR *process, WCHAR *dir_path);
     BOOLEAN(*dir_set_attr)          (WCHAR *user_name, WCHAR *process, WCHAR *dir_path, PFILE_BASIC_INFORMATION pfbi);
-    BOOLEAN(*dir_write)             (WCHAR *user_name, WCHAR *process, WCHAR *dir_path);
     BOOLEAN(*dir_rename)            (WCHAR *user_name, WCHAR *process, WCHAR *src_dir, WCHAR *new_name);
 
     // Process operations
@@ -61,10 +60,6 @@ struct sewin_operations {
     BOOLEAN(*process_read_mem)      (WCHAR *user_name, WCHAR *process, WCHAR *dst_proc);
     BOOLEAN(*process_write_mem)     (WCHAR *user_name, WCHAR *process, WCHAR *dst_proc);
     BOOLEAN(*process_set_mem_attr)  (WCHAR *user_name, WCHAR *process, WCHAR *dst_proc);
-    BOOLEAN(*process_copy_handle)   (WCHAR *user_name, WCHAR *process, WCHAR *dst_proc);
-    BOOLEAN(*process_suspend)       (WCHAR *user_name, WCHAR *process, WCHAR *dst_proc);
-    BOOLEAN(*process_thread_suspend)(WCHAR *user_name, WCHAR *process, WCHAR *dst_proc);
-    BOOLEAN(*process_thread_kill)   (WCHAR *user_name, WCHAR *process, WCHAR *dst_proc);
 
     // Regedit operations
     BOOLEAN(*reg_create_key)        (WCHAR *user_name, WCHAR *process, WCHAR *reg_path);
@@ -80,7 +75,6 @@ struct sewin_operations {
     BOOLEAN(*reg_replace)           (WCHAR *user_name, WCHAR *process, WCHAR *reg_path);
     BOOLEAN(*reg_load_key)          (WCHAR *user_name, WCHAR *process, WCHAR *reg_path);
     BOOLEAN(*reg_unload_key)        (WCHAR *user_name, WCHAR *process, WCHAR *reg_path);
-    BOOLEAN(*reg_set_key_attr)      (WCHAR *user_name, WCHAR *process, WCHAR *reg_path);
 };
 
 /**
