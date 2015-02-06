@@ -46,8 +46,9 @@
 		
 		PS:
 		如果你对其他的操作感兴趣，也可以在注册函数中加入其他的回调函数。
-		在拦截模式SEWIN_MODE_INTERCEPT下，如果回调函数返回TRUE，该操作会被SDK允许，如果回调函数返回FALSE，该操作会被SDK阻值。
-		例如我们设置了拦截模式，同时让ops.file_create回调函数总返回FALSE，那么系统的文件创建就不能成功了。
+		在拦截模式SEWIN_MODE_INTERCEPT下，如果回调函数返回TRUE，该操作会被SDK允许，
+		如果回调函数返回FALSE，该操作会被SDK阻值。例如我们设置了拦截模式，同时让
+		ops.file_create回调函数总返回FALSE，那么系统的文件创建就不能成功了。
 
 ### 第五步：
 		将编译的exe文件和sewindows.sys，sewindows.dll拷贝到同一个目录，运行exe，就可以看到效果啦。
