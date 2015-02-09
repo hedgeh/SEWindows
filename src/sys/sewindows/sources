@@ -1,0 +1,16 @@
+TARGETNAME=sewindows
+TARGETTYPE=DRIVER
+DRIVERTYPE=FS
+LINKER_FLAGS=/INTEGRITYCHECK
+
+TARGETLIBS= $(TARGETLIBS) \
+            $(IFSKIT_LIB_PATH)\fltMgr.lib\
+
+SOURCES=main.c \
+		filemon.c \
+		common.c \
+		processmon.c \
+		regmon.c \
+		lpc.c 
+		
+
