@@ -2,7 +2,7 @@
 在Windows上建立一个开源的强制访问控制框架及SDK。使Windows平台的应用开发者，可以不用关心操作系统底层技术，只用进行简单的SDK调用或配置就可以保护自己的应用程序。
 
 ## 跟我学如何使用SEWindows SDK
-完整示例可以参照：
+		完整示例可以参照：
 		通知模式例:
 		https://github.com/hedgeh/SEWindows/blob/develop/examples/notify_example/notify_example.cpp
 		拦截模式示例（拦截c:\\test目录下的文件创建）
