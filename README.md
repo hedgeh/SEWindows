@@ -3,7 +3,10 @@
 
 ## 跟我学如何使用SEWindows SDK
 完整示例可以参照：
-		https://github.com/hedgeh/SEWindows/blob/develop/examples/simple_example/simple_example.cpp
+		通知模式例:
+		https://github.com/hedgeh/SEWindows/blob/develop/examples/notify_example/notify_example.cpp
+		拦截模式示例（拦截c:\\test目录下的文件创建）
+		https://github.com/hedgeh/SEWindows/blob/develop/examples/intercept_example/intercept_example.cpp
 
 ### 第一步:
 		包含头文件"inc/sewindows.h"，并从sewindows.dll中导出接口函数，
