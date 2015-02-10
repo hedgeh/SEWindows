@@ -1,7 +1,7 @@
 /*
-  simple_example : print file create
+  intercept_example : intercept file create
 
-  --dir-------simple_example.exe
+  --dir-------intercept_example.exe
          |----sewindows.sys
          |----sewindows.dll
 */
@@ -10,7 +10,7 @@
 #include <tchar.h>
 #include <locale.h>
 #include <windows.h>
-#include "../inc/sewindows.h"
+#include "sewindows.h"
 
 #pragma comment(lib,"Advapi32.lib") 
 #pragma comment(lib,"User32.lib") 
@@ -25,7 +25,17 @@ fsewin_register_opt monitor_sewin_register_opt;
 
 BOOLEAN  monitor_file_create(WCHAR *user_name, WCHAR *process, WCHAR *file_path)
 {
-    wprintf(_T("User=%s, Process=%s, file=%s\n"), user_name, process, file_path);
+    WCHAR *mon_dir = _T("C:\\test");
+    
+    /**
+     * not allow create file on "C:\\test"
+     */
+    if (_tcsnicmp(file_path, mon_dir, wcslen(mon_dir)) == 0)
+    {
+        wprintf(_T("User=%s, Process=%s, file=%s\n"), user_name, process, file_path);
+        return FALSE;
+    }
+    
     return TRUE;
 }
 
@@ -56,8 +66,8 @@ int _tmain(int argc, TCHAR * argv[])
     }
 
     // step3. set options
-    //monitor_sewin_setoption(SEWIN_MODE_INTERCEPT, SEWIN_TYPE_FILE|SEWIN_TYPE_FROC|SEWIN_TYPE_REG);
-    monitor_sewin_setoption(SEWIN_MODE_NOTIFY, SEWIN_TYPE_FILE);
+    //monitor_sewin_setoption(SEWIN_MODE_NOTIFY, SEWIN_TYPE_FILE|SEWIN_TYPE_FROC|SEWIN_TYPE_REG);
+    monitor_sewin_setoption(SEWIN_MODE_INTERCEPT, SEWIN_TYPE_FILE);
     
     // step4. register callbak functions
     memset(&ops, 0x00, sizeof(struct sewin_operations));
