@@ -687,12 +687,19 @@ IN HANDLE  ProcessId,
 IN BOOLEAN  Create
 )
 {
-	if (g_currentPid == ProcessId && Create == FALSE)
+	if (Create == FALSE)
 	{
-		g_is_file_run = FALSE;
-		g_is_proc_run = FALSE;
-		g_is_reg_run = FALSE;
-		g_is_unload_allowed = TRUE;
+		if (g_currentPid == ProcessId)
+		{
+			g_is_file_run = FALSE;
+			g_is_proc_run = FALSE;
+			g_is_reg_run = FALSE;
+			g_is_unload_allowed = TRUE;
+		}
+		else
+		{
+			notify_process_exit(ProcessId);
+		}
 	}
 }
 

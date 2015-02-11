@@ -18,7 +18,7 @@ BOOLEAN rule_match(PHIPS_RULE_NODE hrn)
 	LARGE_INTEGER	my_interval;
 
 	my_interval.QuadPart = DELAY_ONE_MILLISECOND;
-	my_interval.QuadPart *= 8000;
+	my_interval.QuadPart *= 15000;
 
 	RtlMoveMemory(&ud.rule_node, hrn, sizeof(HIPS_RULE_NODE));
 	if (!g_is_notify_mode)
@@ -68,6 +68,39 @@ BOOLEAN rule_match(PHIPS_RULE_NODE hrn)
 		return TRUE;
 	}
 }
+
+BOOLEAN notify_process_exit(HANDLE pid)
+{
+	USER_DATA		ud;
+	PVOID			pBuf = &ud;
+	ULONG			replyLength = sizeof(SCANNER_REPLY);
+	NTSTATUS		status;
+	LARGE_INTEGER	my_interval;
+
+	my_interval.QuadPart = DELAY_ONE_MILLISECOND;
+	my_interval.QuadPart *= 15000;
+	RtlZeroMemory(&ud, sizeof(USER_DATA));
+	
+	ud.option = OPTION_PROC_EXIT;
+	ud.rule_node.sub_pid = pid;
+	status = FltSendMessage(g_Filter,
+		&g_ClientPort,
+		pBuf,
+		sizeof(USER_DATA),
+		NULL,
+		&replyLength,
+		&my_interval);
+	if (STATUS_TIMEOUT == status)
+	{
+		g_is_file_run = FALSE;
+		g_is_proc_run = FALSE;
+		g_is_reg_run = FALSE;
+		g_is_unload_allowed = TRUE;
+	}
+	return TRUE;
+	
+}
+
 
 NTSTATUS
 port_connect(PFLT_PORT ClientPort,PVOID ServerPortCookie, PVOID ConnectionContext, ULONG SizeOfContext,PVOID *ConnectionCookie)

@@ -68,6 +68,7 @@ typedef struct _USER_DATA
 
 #define	OPTION_TO_JUGE		1
 #define	OPTION_TO_NOTIFY	2
+#define	OPTION_PROC_EXIT	3
 
 typedef NTSTATUS(*QUERY_INFO_PROCESS) (HANDLE ProcessHandle, PROCESSINFOCLASS ProcessInformationClass,PVOID ProcessInformation, ULONG ProcessInformationLength, PULONG ReturnLength);
 
