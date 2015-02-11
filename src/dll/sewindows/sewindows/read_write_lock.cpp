@@ -1,3 +1,4 @@
+#include "stdafx.h"
 #include "read_write_lock.h"
 
 #define LOCK_IS_OWNED				0x1

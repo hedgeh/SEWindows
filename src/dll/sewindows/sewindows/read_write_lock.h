@@ -1,5 +1,6 @@
 #ifndef _READ_WRITE_LOCK_H
 #define _READ_WRITE_LOCK_H
+
 #include <Windows.h>
 #include <intrin.h>
 #ifdef _M_IX86

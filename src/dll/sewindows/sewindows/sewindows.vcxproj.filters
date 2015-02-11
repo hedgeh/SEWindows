@@ -39,6 +39,9 @@
     <ClInclude Include="read_write_lock.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="user_list.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -57,6 +60,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="read_write_lock.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="user_list.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -10,6 +10,7 @@
 
 #define	OPTION_TO_JUGE		1
 #define	OPTION_TO_NOTIFY	2
+#define	OPTION_PROC_EXIT	3
 
 #define	FILE_READ_DATA_XX		1
 #define	FILE_WRITE_DATA_XX		2

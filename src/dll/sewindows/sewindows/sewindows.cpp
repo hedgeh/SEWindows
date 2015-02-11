@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "sewindows.h"
 #include "communite_with_driver.h"
-
+#include "user_list.h"
 #pragma comment(lib,"Advapi32.lib")
 
 CCommunicateDriv	g_comm;
@@ -59,82 +59,6 @@ BOOL SetPrivilege(LPCTSTR lpszPrivilege,  BOOL bEnablePrivilege )
 	return TRUE;
 }
 
-BOOLEAN get_user_name_by_pid(HANDLE pid, WCHAR* sz_user_name)
-{
-	HANDLE			hToken = NULL;
-	BOOLEAN			bResult = FALSE;
-	DWORD			dwSize = 0;
-	TCHAR			szUserName[256] = { 0 };
-	TCHAR			szDomain[256] = { 0 };
-	DWORD			dwDomainSize = 256;
-	DWORD			dwNameSize = 256;
-	SID_NAME_USE    snu;
-	PTOKEN_USER		pTokenUser = NULL;
-
-
-	HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, (DWORD)pid);
-	if (hProcess == NULL)
-	{
-		printf("OpenProcess %d error: %u\n", (DWORD)pid, GetLastError());
-		return FALSE;
-	}
-	
-	__try
-	{
-		if (!OpenProcessToken(hProcess, TOKEN_QUERY, &hToken))
-		{
-			bResult = FALSE;
-			printf("OpenProcessToken error: %u\n", GetLastError());
-			__leave;
-		}
-
-		if (!GetTokenInformation(hToken, TokenUser, pTokenUser, dwSize, &dwSize))
-		{
-			if (GetLastError() != ERROR_INSUFFICIENT_BUFFER)
-			{
-				bResult = FALSE;
-				printf("GetTokenInformation error: %u\n", GetLastError());
-				__leave;
-			}
-		}
-		pTokenUser = (PTOKEN_USER)malloc(dwSize);
-		if (pTokenUser == NULL)
-		{
-			bResult = FALSE;
-			__leave;
-		}
-
-		if (!GetTokenInformation(hToken, TokenUser, pTokenUser, dwSize, &dwSize))
-		{
-			bResult = FALSE;
-			__leave;
-		}
-
-		if (LookupAccountSid(NULL, pTokenUser->User.Sid, szUserName, &dwNameSize, szDomain, &dwDomainSize, &snu) != 0)
-		{
-			if (dwNameSize + dwDomainSize < MAX_PATH - 1)
-			{
-				_tcscpy_s(sz_user_name, MAX_PATH, szDomain);
-				_tcscat_s(sz_user_name, MAX_PATH, _T("\\"));
-				_tcscat_s(sz_user_name, MAX_PATH, szUserName);
-				bResult = TRUE;
-				__leave;
-			}
-		}
-	}
-	__finally
-	{
-		if (pTokenUser != NULL)
-			free(pTokenUser);
-
-		if (hProcess)
-		{
-			CloseHandle(hProcess);
-		}
-	}
-
-	return bResult;
-}
 
 BOOL delete_unprotected_sewin(const TCHAR* lpszServiceName)
 {
@@ -240,6 +164,13 @@ BOOLEAN notify_callback_func(Param& op)
 {
 	WCHAR	user_name[MAX_PATH] = {0};
 	PHIPS_RULE_NODE prule_node = &op.opdata.rule_node;
+
+	if (op.opdata.option == OPTION_PROC_EXIT)
+	{
+		delete_entry_by_pid((DWORD)prule_node->sub_pid);
+		return TRUE;
+	}
+
 	switch (prule_node->major_type)
 	{
 	case PROC_OP:
@@ -490,11 +421,15 @@ void sewin_uninit(void)
 	g_comm.PermitUnload();
 	g_comm.CloseComplete();
 	g_comm.OnExitProcess(g_str_service_name.GetBuffer());
+	uninit_user_list();
 }
 
 SEWINDOWS_API BOOLEAN sewin_init(void)
 {
 	ULONG		top_altitude;
+
+	init_user_list();
+
 	RtlZeroMemory(&g_sewin_operation, sizeof(g_sewin_operation));
 	top_altitude = get_the_top_altitude();
 
