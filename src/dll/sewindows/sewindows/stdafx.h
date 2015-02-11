@@ -26,5 +26,4 @@
 #define REQUEST_COUNT	4
 
 #include "rule_struct.h"
-
-// TODO: reference additional headers your program requires here
+void sewin_uninit(void);
