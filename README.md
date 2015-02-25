@@ -16,8 +16,7 @@
 		fsewin_setoption    monitor_sewin_setoption;
 		fsewin_register_opt monitor_sewin_register_opt;
 		
-		// 从动态库sewindows.dll中导出接口函数	
-		// step1. loadLibrary sewindows.dll
+		// 从动态库sewindows.dll中导出接口函数
 		HMODULE handle;	
 		handle                     = LoadLibrary(_T("sewindows.dll"));
 		monitor_sewin_init         = (fsewin_init)GetProcAddress(handle, "sewin_init");
@@ -31,7 +30,6 @@
 
 
 ### 第二步:初始化SDK
-		// step2. init sewindows
 		BOOLEAN bret = monitor_sewin_init();
 		if ( !bret )
 		{
@@ -41,7 +39,6 @@
 
 ### 第三步:设置SDK模式和操作对象。
 		// 设置模式为“通知模式”，设置类型为“文件(夹)”操作
-		// step3. set options
 		monitor_sewin_setoption(SEWIN_MODE_NOTIFY, SEWIN_TYPE_FILE);		
 
 
@@ -54,7 +51,6 @@
 		}
 		
 		// 注册monitor_file_create到SDK中
-		// step4. register callbak functions
 		sewin_operations ops;
 		memset(&ops, 0x00, sizeof(struct sewin_operations));
 		ops.file_create = monitor_file_create;
@@ -62,7 +58,11 @@
 
 
 ### 第五步:编译运行
-		将编译的exe文件和sewindows.sys，sewindows.dll拷贝到同一个目录，运行exe，就可以看到效果啦。
+		将编译的exe文件和sewindows.sys，sewindows.dll拷贝到同一个目录，运行exe，就可以看到下面效果啦:
+		  User=LZF-A87A7288234\Administrator, Process=C:\WINDOWS\explorer.exe, file=C:\新建 文本文档.txt
+		  User=LZF-A87A7288234\Administrator, Process=C:\WINDOWS\explorer.exe, file=C:\新建 RTF 文档.rtf
+		  User=LZF-A87A7288234\Administrator, Process=C:\WINDOWS\explorer.exe, file=C:\新建 写字板文档.doc
+		
 		注:
 		  回调函数的调用过程是多线程的，所有如果你的回调函数中有公用的内存，需要自己处理好同步。
 
