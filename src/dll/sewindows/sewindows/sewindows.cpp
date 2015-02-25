@@ -497,7 +497,7 @@ SEWINDOWS_API BOOLEAN sewin_setoption(int mode, int type)
 	{
 		return bret;
 	}
-	if (type & SEWIN_TYPE_FROC)
+	if (type & SEWIN_TYPE_PROC)
 	{
 		bret = g_comm.StartProcMon(TRUE);
 	}

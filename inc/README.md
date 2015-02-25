@@ -27,7 +27,7 @@
 		 * sewin_setoption : set working mode
 		 *
 		 * @param mode : SEWIN_MODE_INTERCEPT or SEWIN_MODE_NOTIFY
-		 * @param type : SEWIN_TYPE_FILE | SEWIN_TYPE_FROC | SEWIN_TYPE_REG
+		 * @param type : SEWIN_TYPE_FILE | SEWIN_TYPE_PROC | SEWIN_TYPE_REG
 		 *
 		 * return :  TRUE  - success
 		 *           FALSE - Failed
@@ -45,11 +45,11 @@
 		SDK需要可以处理的类型(type)有三种：
 		1、文件（夹）SEWIN_TYPE_FILE
 		   对sewin_operations.file_XXX和sewin_operations.dir_XXX有效
-		2、进程 SEWIN_TYPE_FROC
+		2、进程 SEWIN_TYPE_PROC
 		   对sewin_operations.process_XXX有效
 		3、注册表 SEWIN_TYPE_REG
 		   对sewin_operations.reg_XXX有效
-		type支持‘或’操作，即下面情形是合法的：type = SEWIN_TYPE_FILE | SEWIN_TYPE_FROC | SEWIN_TYPE_REG
+		type支持‘或’操作，即下面情形是合法的：type = SEWIN_TYPE_FILE | SEWIN_TYPE_PROC | SEWIN_TYPE_REG
 
 
 ### SDK::注册自定义处理函数

@@ -26,9 +26,9 @@
 		第一个参数表示SDK的工作模式，在SEWIN_MODE_INTERCEPT模式下，
 		    SDK会拦截操作。在SEWIN_MODE_NOTIFY模式下，SDK只是通知，
 		    不会对操作进行拦截。
-		第二个参数表示要拦截的对象，SEWIN_TYPE_FILE，SEWIN_TYPE_FROC，
+		第二个参数表示要拦截的对象，SEWIN_TYPE_FILE，SEWIN_TYPE_PROC，
 		    SEWIN_TYPE_REG分别对应文件、进程、注册表。这个参数支持或操作，
-		    即可以设置成下面这样：SEWIN_TYPE_FILE|SEWIN_TYPE_FROC|SEWIN_TYPE_REG
+		    即可以设置成下面这样：SEWIN_TYPE_FILE|SEWIN_TYPE_PROC|SEWIN_TYPE_REG
 		我们的示例中只是设置了“对文件的操作进行通知”
 		
 		monitor_sewin_setoption(SEWIN_MODE_NOTIFY, SEWIN_TYPE_FILE);

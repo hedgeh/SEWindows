@@ -56,7 +56,7 @@ int _tmain(int argc, TCHAR * argv[])
     }
 
     // step3. set options
-    //monitor_sewin_setoption(SEWIN_MODE_INTERCEPT, SEWIN_TYPE_FILE|SEWIN_TYPE_FROC|SEWIN_TYPE_REG);
+    //monitor_sewin_setoption(SEWIN_MODE_INTERCEPT, SEWIN_TYPE_FILE|SEWIN_TYPE_PROC|SEWIN_TYPE_REG);
     monitor_sewin_setoption(SEWIN_MODE_NOTIFY, SEWIN_TYPE_FILE);
     
     // step4. register callbak functions
