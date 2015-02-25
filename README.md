@@ -2,11 +2,6 @@
 在Windows上建立一个开源的强制访问控制框架及SDK。使Windows平台的应用开发者，可以不用关心操作系统底层技术，只用进行简单的SDK调用或配置就可以保护自己的应用程序。
 
 ## 跟我学如何使用SEWindows SDK
-		完整示例可以参照：
-		通知模式例:
-		https://github.com/hedgeh/SEWindows/blob/develop/examples/notify_example/notify_example.cpp
-		拦截模式示例（拦截c:\\test目录下的文件创建）
-		https://github.com/hedgeh/SEWindows/blob/develop/examples/intercept_example/intercept_example.cpp
 
 ### 第一步:包含头文件"sewindows.h"，并从sewindows.dll中导出接口函数，
 		// 包含头文件
@@ -34,6 +29,7 @@
 		    exit(0);
 		}
 
+
 ### 第二步:初始化SDK
 		// step2. init sewindows
 		BOOLEAN bret = monitor_sewin_init();
@@ -42,10 +38,12 @@
 		     exit(0);
 		}
 
+
 ### 第三步:设置SDK模式和操作对象。
 		// 设置模式为“通知模式”，设置类型为“文件(夹)”操作
 		// step3. set options
 		monitor_sewin_setoption(SEWIN_MODE_NOTIFY, SEWIN_TYPE_FILE);		
+
 
 ### 第四步:注册回调函数，处理感兴趣的操作。
 		//我们先定义一个自己的回调函数，用来打印文件创建操作的信息		
@@ -62,10 +60,12 @@
 		ops.file_create = monitor_file_create;
 		monitor_sewin_register_opt(&ops);
 
+
 ### 第五步:编译运行
 		将编译的exe文件和sewindows.sys，sewindows.dll拷贝到同一个目录，运行exe，就可以看到效果啦。
 		注:
 		  回调函数的调用过程是多线程的，所有如果你的回调函数中有公用的内存，需要自己处理好同步。
+
 
 ### 完整示例:
 		下面是一个完整的示例，演示了使用SDK对文件的创建操作进行通知，并在用户自定义函数中打印了收到的
