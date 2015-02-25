@@ -33,7 +33,7 @@
 
 
 ### SDK设置工作模式:sewin_setoption
-		设置SDK的工作模式为通知模式或者拦截模式。
+		设置SDK的工作模式为“通知模式”或者“拦截模式”。
 #### 函数定义
 		SEWINDOWS_API BOOLEAN sewin_setoption(int mode, int type);
 #### 参数
@@ -53,7 +53,7 @@
 		      设置此标识，SDK会对进注册表操作进行“拦截”或“通知”。
 		
 		注： 
-		    type支持‘或’操作，即下面情形是合法的：
+		    type支持“或”操作，即下面情形是合法的：
 		    type = SEWIN_TYPE_FILE | SEWIN_TYPE_PROC | SEWIN_TYPE_REG
 		      
 #### 返回值
@@ -75,6 +75,9 @@
 		将用户自定义的函数注册到SDK中(每个SDK中，只能有一份注册函数)，当SDK捕获到系统操作后，
 		会调用用户自定义的函数，交由用户进行处理，并在“拦截模式”下，根据用户的返回值决定对该
 		操作进行“拦截”或者“放行”。
+		
+		“拦截模式下”，用户自定义函数返回“TRUE”，SDK会对该操作“放行”；
+		“拦截模式下”，用户自定义函数返回“FALSE”，SDK会对该操作“拦截”。
 #### 函数定义
 		SEWINDOWS_API BOOLEAN sewin_register_opt(struct sewin_operations *ops);
 #### 参数
@@ -236,4 +239,4 @@
 		
 		    return 0;
 		}
-	
+
