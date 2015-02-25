@@ -8,9 +8,7 @@
 		拦截模式示例（拦截c:\\test目录下的文件创建）
 		https://github.com/hedgeh/SEWindows/blob/develop/examples/intercept_example/intercept_example.cpp
 
-### 第一步:
-		包含头文件"sewindows.h"，并从sewindows.dll中导出接口函数，
-#### 示例:
+### 第一步:包含头文件"sewindows.h"，并从sewindows.dll中导出接口函数，
 		// 包含头文件
 		#include "sewindows.h"
 		
@@ -36,9 +34,7 @@
 		    exit(0);
 		}
 
-### 第二步:
-		初始化SDK
-#### 示例:		
+### 第二步:初始化SDK
 		// step2. init sewindows
 		BOOLEAN bret = monitor_sewin_init();
 		if ( !bret )
@@ -46,16 +42,12 @@
 		     exit(0);
 		}
 
-### 第三步:
-		设置SDK模式和操作对象。
-#### 示例:
+### 第三步:设置SDK模式和操作对象。
 		// 设置模式为“通知模式”，设置类型为“文件(夹)”操作
 		// step3. set options
 		monitor_sewin_setoption(SEWIN_MODE_NOTIFY, SEWIN_TYPE_FILE);		
 
-### 第四步:
-		注册回调函数，处理感兴趣的操作。
-#### 示例:
+### 第四步:注册回调函数，处理感兴趣的操作。
 		//我们先定义一个自己的回调函数，用来打印文件创建操作的信息		
 		BOOLEAN  monitor_file_create(WCHAR *user_name, WCHAR *process, WCHAR *file_path)
 		{
@@ -70,7 +62,7 @@
 		ops.file_create = monitor_file_create;
 		monitor_sewin_register_opt(&ops);
 
-### 第五步:
+### 第五步:编译运行
 		将编译的exe文件和sewindows.sys，sewindows.dll拷贝到同一个目录，运行exe，就可以看到效果啦。
 		注:
 		  回调函数的调用过程是多线程的，所有如果你的回调函数中有公用的内存，需要自己处理好同步。
