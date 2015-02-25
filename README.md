@@ -3,7 +3,7 @@
 
 ## 跟我学如何使用SEWindows SDK
 
-### 第一步:包含头文件"sewindows.h"，并从sewindows.dll中导出接口函数，
+### 第一步:包含头文件"sewindows.h"，并从sewindows.dll中导出接口函数
 		// 包含头文件
 		#include "sewindows.h"
 		
@@ -37,12 +37,12 @@
 		}
 
 
-### 第三步:设置SDK模式和操作对象。
+### 第三步:设置SDK模式和操作对象
 		// 设置模式为“通知模式”，设置类型为“文件(夹)”操作
 		monitor_sewin_setoption(SEWIN_MODE_NOTIFY, SEWIN_TYPE_FILE);		
 
 
-### 第四步:注册回调函数，处理感兴趣的操作。
+### 第四步:注册回调函数，处理感兴趣的操作
 		//我们先定义一个自己的回调函数，用来打印文件创建操作的信息		
 		BOOLEAN  monitor_file_create(WCHAR *user_name, WCHAR *process, WCHAR *file_path)
 		{
@@ -64,7 +64,7 @@
 		  User=LZF-A87A7288234\Administrator, Process=C:\WINDOWS\explorer.exe, file=C:\新建 写字板文档.doc
 		
 		注:
-		  回调函数的调用过程是多线程的，所有如果你的回调函数中有公用的内存，需要自己处理好同步。
+		  回调函数的调用过程是多线程的，所有如果你的回调函数中有公用的内容，需要自己处理好同步。
 
 
 ### 完整示例:
