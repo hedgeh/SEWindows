@@ -11,16 +11,18 @@
 		2、sewindows.dll  动态库
 		3、sewindows.h    头文件
 
-### SDK::初始化
-		/**
-		 * sewin_init : init sewindows
-		 *
-		 * return :  TRUE  - success
-		 *           FALSE - Failed
-		 */
+### SDK::sewin_init
+		初始化函数，在使用SDK之前调用。
+#### 函数定义
 		SEWINDOWS_API BOOLEAN sewin_init(void);
+#### 参数
+		无参数
+#### 返回值
+		TRUE  : 成功
+		FALSE : 失败
 
-		使用SDK之前，需要先调用初始化函数
+#### 示例
+		无
 		
 ### SDK::设置工作模式
 		/**
