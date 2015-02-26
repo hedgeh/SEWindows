@@ -60,16 +60,17 @@ struct sewin_operations {
     BOOLEAN(*process_read_mem)      (WCHAR *user_name, WCHAR *process, WCHAR *dst_proc);
     BOOLEAN(*process_write_mem)     (WCHAR *user_name, WCHAR *process, WCHAR *dst_proc);
     BOOLEAN(*process_set_mem_attr)  (WCHAR *user_name, WCHAR *process, WCHAR *dst_proc);
+    BOOLEAN(*process_susresume)     (WCHAR *user_name, WCHAR *process, WCHAR *dst_proc);
+    BOOLEAN(*thread_susresume)      (WCHAR *user_name, WCHAR *process, WCHAR *dst_proc);
+    BOOLEAN(*thread_kill)           (WCHAR *user_name, WCHAR *process, WCHAR *dst_proc);
 
     // Registery operations
-    BOOLEAN(*reg_create_key)        (WCHAR *user_name, WCHAR *process, WCHAR *reg_path);
-    BOOLEAN(*reg_delete_key)        (WCHAR *user_name, WCHAR *process, WCHAR *reg_path);
-    BOOLEAN(*reg_enum_key)          (WCHAR *user_name, WCHAR *process, WCHAR *reg_path);
-    BOOLEAN(*reg_rename_key)        (WCHAR *user_name, WCHAR *process, WCHAR *src_path, WCHAR *new_name);
-    BOOLEAN(*reg_set_value)         (WCHAR *user_name, WCHAR *process, WCHAR *reg_path, WCHAR *reg_value);
-    BOOLEAN(*reg_delete_value)      (WCHAR *user_name, WCHAR *process, WCHAR *reg_path);
     BOOLEAN(*reg_read_key)          (WCHAR *user_name, WCHAR *process, WCHAR *reg_path);
-    BOOLEAN(*reg_enum_value)        (WCHAR *user_name, WCHAR *process, WCHAR *reg_path);
+    BOOLEAN(*reg_delete_value)      (WCHAR *user_name, WCHAR *process, WCHAR *reg_path);
+    BOOLEAN(*reg_create_key)        (WCHAR *user_name, WCHAR *process, WCHAR *reg_path);
+    BOOLEAN(*reg_set_value)         (WCHAR *user_name, WCHAR *process, WCHAR *reg_path, WCHAR *reg_value);
+    BOOLEAN(*reg_delete_key)        (WCHAR *user_name, WCHAR *process, WCHAR *reg_path);
+    BOOLEAN(*reg_rename_key)        (WCHAR *user_name, WCHAR *process, WCHAR *src_path, WCHAR *new_name);
     BOOLEAN(*reg_save_key)          (WCHAR *user_name, WCHAR *process, WCHAR *reg_path);
     BOOLEAN(*reg_restore_key)       (WCHAR *user_name, WCHAR *process, WCHAR *reg_path);
     BOOLEAN(*reg_replace)           (WCHAR *user_name, WCHAR *process, WCHAR *reg_path);

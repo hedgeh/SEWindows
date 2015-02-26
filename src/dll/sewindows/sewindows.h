@@ -12,7 +12,7 @@
 #define SEWIN_MODE_INTERCEPT      1    // Intercept mode
 #define SEWIN_MODE_NOTIFY         2    // Notify    mode
 
-#define SEWIN_TYPE_FILE         0x1    // File    	operations
+#define SEWIN_TYPE_FILE         0x1    // File      operations
 #define SEWIN_TYPE_PROC         0x2    // Process   operations
 #define SEWIN_TYPE_REG          0x4    // Registery operations
 
@@ -90,7 +90,7 @@ SEWINDOWS_API BOOLEAN sewin_init(void);
  * sewin_setoption : set working mode
  *
  * @param mode : SEWIN_MODE_INTERCEPT or SEWIN_MODE_NOTIFY
- * @param type : SEWIN_TYPE_FILE | SEWIN_TYPE_FROC | SEWIN_TYPE_REG
+ * @param type : SEWIN_TYPE_FILE | SEWIN_TYPE_PROC | SEWIN_TYPE_REG
  *
  * return :  TRUE  - success
  *           FALSE - Failed
