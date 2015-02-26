@@ -60,7 +60,7 @@ VOID create_handle(_Inout_ PHANDLE Handle)
 
 	handle = CreateSemaphore(NULL,  0, MAXLONG,NULL);
 
-	if (_InterlockedCompareExchangePointer(Handle,handle,NULL) != NULL)
+	if (InterlockedCompareExchangePointer(Handle,handle,NULL) != NULL)
 	{
 		CloseHandle(handle);
 	}
@@ -68,7 +68,7 @@ VOID create_handle(_Inout_ PHANDLE Handle)
 
 VOID FASTCALL lock_write( _Inout_ PREAD_WRITE_LOCK prwlock)
 {
-	DWORD value;
+	long value;
 	ULONG i = 0;
 
 	while (TRUE)
@@ -106,7 +106,7 @@ VOID FASTCALL lock_write( _Inout_ PREAD_WRITE_LOCK prwlock)
 
 VOID FASTCALL lock_read(_Inout_ PREAD_WRITE_LOCK prwlock)
 {
-	ULONG value;
+	LONG value;
 	ULONG i = 0;
 
 	while (TRUE)
@@ -147,7 +147,7 @@ VOID FASTCALL unlock_write(
 	_Inout_ PREAD_WRITE_LOCK prwlock
 	)
 {
-	ULONG value;
+	LONG value;
 
 	while (TRUE)
 	{
@@ -187,7 +187,7 @@ VOID FASTCALL unlock_read(
 	_Inout_ PREAD_WRITE_LOCK prwlock
 	)
 {
-	ULONG value;
+	LONG value;
 
 	while (TRUE)
 	{
@@ -224,7 +224,7 @@ BOOLEAN FASTCALL try_lock_write(
 	_Inout_ PREAD_WRITE_LOCK prwlock
 	)
 {
-	ULONG value;
+	LONG value;
 
 	value = prwlock->lock_value;
 
@@ -240,7 +240,7 @@ BOOLEAN FASTCALL try_lock_read(
 	_Inout_ PREAD_WRITE_LOCK prwlock
 	)
 {
-	ULONG value;
+	LONG value;
 
 	value = prwlock->lock_value;
 

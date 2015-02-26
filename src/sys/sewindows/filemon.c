@@ -1,5 +1,4 @@
 #include "main.h"
-#include "common.h"
 #include "filemon.h"
 #include <strsafe.h>
 #include "lpc.h"
@@ -48,68 +47,8 @@ CONST FLT_REGISTRATION g_FilterRegistration = {
 
 };
 
-NTSTATUS query_symbolic_link(
-	IN PUNICODE_STRING SymbolicLinkName,
-	OUT PUNICODE_STRING LinkTarget
-	)
-{
-	OBJECT_ATTRIBUTES	oa = { 0 };
-	NTSTATUS			status = 0;
-	HANDLE				handle = NULL;
-	ULONG				len = 0;
-	InitializeObjectAttributes(
-		&oa,
-		SymbolicLinkName,
-		OBJ_CASE_INSENSITIVE,
-		0,
-		0);
 
-	status = ZwOpenSymbolicLinkObject(&handle, GENERIC_READ, &oa);
-	if (!NT_SUCCESS(status))
-	{
-		return status;
-	}
-	status = ZwQuerySymbolicLinkObject(handle, LinkTarget, &len);
-	ZwClose(handle);
-	return status;
-}
-BOOLEAN build_path_table()
-{
-	
-	NTSTATUS				status = 0;
-	UNICODE_STRING			driveLetterName = { 0 };
-	WCHAR					driveLetterNameBuf[128] = { 0 };
-	WCHAR					c = L'\0';
-	WCHAR					DriLetter[3] = { 0 };
-	UNICODE_STRING			linkTarget = { 0 };
-	WCHAR					wclinkTarget[128] = { 0 };
-
-	RtlZeroMemory(&g_path_table,sizeof(PATH_TABLE)*26);
-	for (c = L'A'; c <= L'Z'; c++)
-	{
-		RtlInitEmptyUnicodeString(&driveLetterName, driveLetterNameBuf, sizeof(driveLetterNameBuf));
-		RtlAppendUnicodeToString(&driveLetterName, L"\\??\\");
-		DriLetter[0] = c;
-		DriLetter[1] = L':';
-		DriLetter[2] = 0;
-		RtlAppendUnicodeToString(&driveLetterName, DriLetter);
-
-		RtlInitEmptyUnicodeString(&linkTarget, wclinkTarget, sizeof(wclinkTarget));
-		status = query_symbolic_link(&driveLetterName, &linkTarget);
-		if (!NT_SUCCESS(status))
-		{
-			continue;
-		}
-		
-		wcscpy(g_path_table[c-'A'].dos_name,DriLetter);
-		wcscpy(g_path_table[c-'A'].nt_name,wclinkTarget);
-	}
-	return TRUE;
-}
-
-
-
-BOOLEAN  is_dir(PWCHAR pPath) 
+FORCEINLINE BOOLEAN  is_dir(PWCHAR pPath) 
 {
 	return pPath[wcslen(pPath) - 1] == L'\\';
 }
@@ -150,13 +89,10 @@ FLT_PREOP_CALLBACK_STATUS sw_pre_create_callback( PFLT_CALLBACK_DATA Data,PCFLT_
 {
 	NTSTATUS		status = STATUS_SUCCESS;
 	PHIPS_RULE_NODE cinf = NULL;
-	PWCHAR			pPath = NULL;
-	WCHAR			wszLongName[MAXPATHLEN];
 	BOOLEAN			IsDirectory = FALSE;
 	PFLT_FILE_NAME_INFORMATION	nameInfo = NULL;
 	WCHAR						tmpPath[MAXPATHLEN] = { 0 };
 	ACCESS_MASK		OriginalDesiredAccess;
-	int				try_count = 0;
 	ULONG           create_options = Data->Iopb->Parameters.Create.Options & 0x00ffffff;
 
 	
@@ -198,40 +134,16 @@ FLT_PREOP_CALLBACK_STATUS sw_pre_create_callback( PFLT_CALLBACK_DATA Data,PCFLT_
 	{
 		return FLT_PREOP_SUCCESS_NO_CALLBACK;
 	}
-try_again:
+
 	cinf = ExAllocateFromPagedLookasideList(&g_file_lookaside_list);
 	if (cinf == NULL)
 	{
-		if (try_count < 10)
-		{
-			try_count++;
-			goto try_again;
-		}
 		return FLT_PREOP_SUCCESS_NO_CALLBACK;
 	}
 	RtlZeroMemory(cinf, sizeof(HIPS_RULE_NODE));
 	cinf->major_type = FILE_OP;
 
 	cinf->sub_pid = PsGetCurrentProcessId();
-
-	pPath = get_proc_name_by_pid(cinf->sub_pid, tmpPath);
-
-	if (pPath == NULL)
-	{
-		goto err_ret;
-	}
-
-	if (is_short_name_path(pPath))
-	{
-		convert_short_name_to_long(wszLongName, pPath, sizeof(WCHAR)*MAXPATHLEN);
-		RtlCopyMemory(pPath, wszLongName, sizeof(WCHAR)*MAXPATHLEN);
-	}
-
-	if (!get_dos_name(pPath, cinf->src_path))
-	{
-		StringCbCopyW(cinf->src_path, sizeof(cinf->src_path), pPath);
-	}
-
 	status = FltGetFileNameInformation(Data, FLT_FILE_NAME_OPENED |FLT_FILE_NAME_QUERY_ALWAYS_ALLOW_CACHE_LOOKUP, &nameInfo);
 
 	if (!NT_SUCCESS(status))
@@ -243,9 +155,7 @@ try_again:
 	{
 		goto err_ret;
 	}
-
-	RtlMoveMemory(tmpPath, nameInfo->Name.Buffer, nameInfo->Name.Length);
-	tmpPath[nameInfo->Name.Length / 2] = L'\0';
+	StringCbCopyNW(cinf->des_path,sizeof(WCHAR)*MAXPATHLEN,nameInfo->Name.Buffer, nameInfo->Name.Length);
 
 	status = FltIsDirectory(FltObjects->FileObject, FltObjects->Instance, &IsDirectory);
 	if (!NT_SUCCESS(status))
@@ -263,17 +173,6 @@ try_again:
 		}
 	}
 	cinf->isDir = IsDirectory;
-
-	if (is_short_name_path(tmpPath))
-	{
-		convert_short_name_to_long(wszLongName, tmpPath, sizeof(WCHAR)*MAXPATHLEN);
-		RtlCopyMemory(tmpPath, wszLongName, sizeof(WCHAR)*MAXPATHLEN);
-	}
-
-	if (!get_dos_name(tmpPath, cinf->des_path))
-	{
-		StringCbCopyW(cinf->des_path, sizeof(cinf->des_path), tmpPath);
-	}
 
 	if (wcslen(cinf->des_path) <= 3)
 	{
@@ -351,13 +250,10 @@ FLT_POSTOP_CALLBACK_STATUS sw_post_create_callback( PFLT_CALLBACK_DATA Data, PCF
 {
 	NTSTATUS			status = STATUS_SUCCESS;
 	PHIPS_RULE_NODE		cinf = NULL;
-	PWCHAR				pPath = NULL;
-	WCHAR				wszLongName[MAXPATHLEN];
 	BOOLEAN				IsDirectory = FALSE;
 	PFLT_FILE_NAME_INFORMATION		nameInfo = NULL;
 	WCHAR							tmpPath[MAXPATHLEN] = { 0 };
 	FILE_DISPOSITION_INFORMATION	fdi;
-	int								try_count = 0;
 
 	if ((PsGetCurrentProcessId() == (HANDLE)4) || (PsGetCurrentProcessId() == (HANDLE)0) || g_is_file_run == FALSE)
 	{
@@ -390,15 +286,10 @@ FLT_POSTOP_CALLBACK_STATUS sw_post_create_callback( PFLT_CALLBACK_DATA Data, PCF
 		return FLT_POSTOP_FINISHED_PROCESSING;
 	}
 	
-try_again:
+
 	cinf = ExAllocateFromPagedLookasideList(&g_file_lookaside_list);
 	if (cinf == NULL)
 	{
-		if (try_count < 10)
-		{
-			try_count++;
-			goto try_again;
-		}
 		return FLT_POSTOP_FINISHED_PROCESSING;
 	}
 
@@ -408,23 +299,6 @@ try_again:
 	cinf->sub_pid = PsGetCurrentProcessId();
 	cinf->minor_type = FILE_CREATE_XX;
 
-	pPath = get_proc_name_by_pid(cinf->sub_pid, tmpPath);
-
-	if (pPath == NULL)
-	{
-		goto err_ret;
-	}
-
-	if (is_short_name_path(pPath))
-	{
-		convert_short_name_to_long(wszLongName, pPath, sizeof(WCHAR)*MAXPATHLEN);
-		RtlCopyMemory(pPath, wszLongName, sizeof(WCHAR)*MAXPATHLEN);
-	}
-
-	if (!get_dos_name(pPath, cinf->src_path))
-	{
-		StringCbCopyW(cinf->src_path, sizeof(cinf->src_path), pPath);
-	}
 
 	status = FltGetFileNameInformation(Data, FLT_FILE_NAME_OPENED | FLT_FILE_NAME_QUERY_ALWAYS_ALLOW_CACHE_LOOKUP, &nameInfo);
 
@@ -437,9 +311,8 @@ try_again:
 	{
 		goto err_ret;
 	}
+	StringCbCopyNW(cinf->des_path,sizeof(WCHAR)*MAXPATHLEN,nameInfo->Name.Buffer, nameInfo->Name.Length);
 
-	RtlMoveMemory(tmpPath, nameInfo->Name.Buffer, nameInfo->Name.Length);
-	tmpPath[nameInfo->Name.Length / 2] = L'\0';
 
 	status = FltIsDirectory(FltObjects->FileObject, FltObjects->Instance, &IsDirectory);
 	if (!NT_SUCCESS(status))
@@ -450,16 +323,7 @@ try_again:
 		}
 	}
 	cinf->isDir = IsDirectory;
-	if (is_short_name_path(tmpPath))
-	{
-		convert_short_name_to_long(wszLongName, tmpPath, sizeof(WCHAR)*MAXPATHLEN);
-		RtlCopyMemory(tmpPath, wszLongName, sizeof(WCHAR)*MAXPATHLEN);
-	}
-
-	if (!get_dos_name(tmpPath, cinf->des_path))
-	{
-		StringCbCopyW(cinf->des_path, sizeof(cinf->des_path), tmpPath);
-	}
+	
 	if (wcslen(cinf->des_path) <= 3)
 	{
 		goto err_ret;
@@ -498,14 +362,10 @@ err_ret:
 FLT_PREOP_CALLBACK_STATUS sw_pre_setinfo_callback( PFLT_CALLBACK_DATA Data, PCFLT_RELATED_OBJECTS FltObjects,PVOID *CompletionContext)
 {
 	NTSTATUS		status = STATUS_SUCCESS;
-	
-	PWCHAR pPath =	NULL;
 	PHIPS_RULE_NODE	cinf = NULL;
-	WCHAR			wszLongName[MAXPATHLEN] = { 0 };
 	BOOLEAN			IsDirectory = FALSE;
 	PFLT_FILE_NAME_INFORMATION	nameInfo = NULL;
 	WCHAR						tmpPath[MAXPATHLEN] = { 0 };
-	int							try_count = 0;
 
 
 	if ((PsGetCurrentProcessId() == (HANDLE)4) || (PsGetCurrentProcessId() == (HANDLE)0) || g_is_file_run == FALSE)
@@ -539,15 +399,10 @@ FLT_PREOP_CALLBACK_STATUS sw_pre_setinfo_callback( PFLT_CALLBACK_DATA Data, PCFL
 		return FLT_PREOP_SUCCESS_NO_CALLBACK;
 	}
 
-try_again:
+
 	cinf = ExAllocateFromPagedLookasideList(&g_file_lookaside_list);
 	if (cinf == NULL)
 	{
-		if (try_count < 10)
-		{
-			try_count++;
-			goto try_again;
-		}
 		return FLT_PREOP_SUCCESS_NO_CALLBACK;
 	}
 
@@ -556,26 +411,6 @@ try_again:
 	cinf->major_type = FILE_OP;
 
 	cinf->sub_pid = PsGetCurrentProcessId();
-
-
-	pPath = get_proc_name_by_pid(cinf->sub_pid, tmpPath);
-
-	if (pPath == NULL)
-	{
-		goto err_ret;
-	}
-
-	if (is_short_name_path(pPath))
-	{
-		convert_short_name_to_long(wszLongName, pPath, sizeof(WCHAR)*MAXPATHLEN);
-		RtlCopyMemory(pPath, wszLongName, sizeof(WCHAR)*MAXPATHLEN);
-	}
-	
-	if (!get_dos_name(pPath, cinf->src_path))
-	{
-		StringCbCopyW(cinf->des_path, sizeof(cinf->des_path), pPath);
-	}
-
 	status = FltGetFileNameInformation(Data, FLT_FILE_NAME_OPENED | FLT_FILE_NAME_QUERY_ALWAYS_ALLOW_CACHE_LOOKUP, &nameInfo);
 
 	if (!NT_SUCCESS(status))
@@ -587,8 +422,7 @@ try_again:
 	{
 		goto err_ret;
 	}
-	RtlMoveMemory(tmpPath, nameInfo->Name.Buffer, nameInfo->Name.Length);
-	tmpPath[nameInfo->Name.Length / 2] = L'\0';
+	StringCbCopyNW(cinf->des_path,sizeof(WCHAR)*MAXPATHLEN,nameInfo->Name.Buffer, nameInfo->Name.Length);
 	status = FltIsDirectory(FltObjects->FileObject, FltObjects->Instance, &IsDirectory);
 	if (!NT_SUCCESS(status))
 	{
@@ -598,16 +432,6 @@ try_again:
 		}
 	}
 	cinf->isDir = IsDirectory;
-	if (is_short_name_path(tmpPath))
-	{
-		convert_short_name_to_long(wszLongName, tmpPath, sizeof(WCHAR)*MAXPATHLEN);
-		RtlCopyMemory(tmpPath, wszLongName, sizeof(WCHAR)*MAXPATHLEN);
-	}
-
-	if (!get_dos_name(tmpPath, cinf->des_path))
-	{
-		StringCbCopyW(cinf->des_path, sizeof(cinf->des_path), tmpPath);
-	}
 	if (Data->Iopb->Parameters.SetFileInformation.FileInformationClass == FileDispositionInformation)
 	{
 		if (((PFILE_DISPOSITION_INFORMATION)(Data->Iopb->Parameters.SetFileInformation.InfoBuffer))->DeleteFile == TRUE)
@@ -635,11 +459,7 @@ try_again:
 			{
 				goto err_ret;
 			}
-			StringCbCopyNW(tmpPath, sizeof(tmpPath), pfn->FileName, pfn->FileNameLength);
-			if (!get_dos_name(tmpPath, cinf->new_name))
-			{
-				StringCbCopyNW(cinf->new_name, sizeof(cinf->new_name), pfn->FileName, pfn->FileNameLength);
-			}
+			StringCbCopyNW(cinf->new_name, sizeof(cinf->new_name),  pfn->FileName, pfn->FileNameLength);
 		}
 		cinf->minor_type = FILE_RENAME_XX;
 	}
@@ -706,7 +526,6 @@ IN BOOLEAN  Create
 NTSTATUS sw_init_minifliter(PDRIVER_OBJECT DriverObject)
 {
 	NTSTATUS status = STATUS_UNSUCCESSFUL;
-	build_path_table();
 	
 	status = PsSetCreateProcessNotifyRoutine(CreateProcessNotifyRoutine, FALSE);
 	if (!NT_SUCCESS(status))

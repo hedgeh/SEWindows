@@ -8,7 +8,6 @@ TARGETLIBS= $(TARGETLIBS) \
 
 SOURCES=main.c \
 		filemon.c \
-		common.c \
 		processmon.c \
 		regmon.c \
 		lpc.c 

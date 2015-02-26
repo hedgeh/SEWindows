@@ -111,6 +111,12 @@ again:
 	{
 		return FALSE;
 	}
+	//GetWindowsDirectory(szTempStr,MAX_PATH);
+	//if (RegSetValueEx(hKey, _T("system_dir"), 0, REG_SZ, (CONST BYTE*)szTempStr, (DWORD)_tcslen(szTempStr)*sizeof(TCHAR)) != ERROR_SUCCESS)
+	//{
+	//	return FALSE;
+	//}
+
 	RegFlushKey(hKey);
 	RegCloseKey(hKey);
 

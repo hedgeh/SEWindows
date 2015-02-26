@@ -12,9 +12,9 @@
 
 typedef struct _READ_WRITE_LOCK
 {
-	DWORD	lock_value;
-	HANDLE	write_event;
-	HANDLE	read_event;
+	volatile long	lock_value;
+	HANDLE			write_event;
+	HANDLE			read_event;
 } READ_WRITE_LOCK, *PREAD_WRITE_LOCK;
 
 VOID	init_rwlock(_Out_ PREAD_WRITE_LOCK prwlock);

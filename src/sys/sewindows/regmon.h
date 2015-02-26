@@ -14,5 +14,4 @@
 
 NTSTATUS sw_register_init(PDRIVER_OBJECT pDriverObject);
 NTSTATUS sw_register_uninit(PDRIVER_OBJECT pDriverObject);
-NTSTATUS sw_get_current_user(WCHAR *srcPath, int len);
-int sw_regisster_make_path(WCHAR * path, ULONG lenstr);
+

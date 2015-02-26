@@ -2,7 +2,7 @@
 #include <fltKernel.h>
 
 
-#pragma warning( disable: 4127 4055 4305 4100 4201 4995)
+#pragma warning( disable:4127 4305 4100 4201)
 #define  MAXPATHLEN         260        // 文件|进程|注册表最大长度
 #define  MAXNAMELEN         64         // 用户名最大长度
 
@@ -39,7 +39,6 @@ typedef struct _HIPS_RULE_NODE
 	{
 		HANDLE		obj_pid;
 	};
-	WCHAR		src_path[MAXPATHLEN];
 	WCHAR		des_path[MAXPATHLEN];
 	union
 	{
@@ -68,7 +67,7 @@ typedef struct _USER_DATA
 
 #define	OPTION_TO_JUGE		1
 #define	OPTION_TO_NOTIFY	2
-#define	OPTION_PROC_EXIT	3
+#define	OPTION_PROC_EXIT	3 
 
 typedef NTSTATUS(*QUERY_INFO_PROCESS) (HANDLE ProcessHandle, PROCESSINFOCLASS ProcessInformationClass,PVOID ProcessInformation, ULONG ProcessInformationLength, PULONG ReturnLength);
 
@@ -83,4 +82,6 @@ extern WCHAR				g_port_name[MAXNAMELEN];
 extern WCHAR				g_symbol_name[MAXNAMELEN];
 extern BOOLEAN				g_is_unload_allowed;
 extern WCHAR				g_service_name[MAXNAMELEN];
+//extern WCHAR				g_system_dir[MAXPATHLEN];
+//extern WCHAR				g_system_exploror[MAXPATHLEN];
 extern BOOLEAN				g_is_notify_mode;

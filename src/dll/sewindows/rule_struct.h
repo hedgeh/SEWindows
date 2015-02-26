@@ -20,12 +20,15 @@
 #define	FILE_SETINFO_XX			6
 #define	FILE_EXECUTE_XX			7
 
-#define  OP_PROC_KILL                      1  // 杀死进程                          
-#define  OP_PROC_CREATE_REMOTE_THREAD      2  // 远程线程程创建                     
-#define  OP_PROC_READ_PROCESS              3  // 进程读操作             
-#define  OP_PROC_WRITE_PROCESS             4  // 进程写操作  
-#define  OP_PROC_CREATE_PROCESS            5  // 进程创建操作  
-#define  OP_PROC_CHANGE_VM				   6  // 修改内存属性 
+#define  OP_PROC_KILL						1  // 杀死进程                          
+#define  OP_PROC_CREATE_REMOTE_THREAD		2  // 远程线程程创建                     
+#define  OP_PROC_READ_PROCESS				3  // 进程读操作             
+#define  OP_PROC_WRITE_PROCESS				4  // 进程写操作  
+#define  OP_PROC_CREATE_PROCESS				5  // 进程创建操作  
+#define  OP_PROC_CHANGE_VM					6  // 修改内存属性 
+#define  OP_PROC_SUSPEND_RESUME				7  // 挂起进程
+#define  OP_THREAD_KILL						8  // 杀死线程
+#define  OP_THREAD_SUSPEND_RESUME			9  // 恢复线程
 
 #define  OP_REG_READ						1  // 注册表读
 #define  OP_REG_DELETE_VALUE_KEY			3  // 删除键值
@@ -44,23 +47,21 @@ typedef struct _HIPS_RULE_NODE
 {
 	UCHAR		major_type;
 	UCHAR		minor_type;
-	UCHAR		isDir;
+	UCHAR		is_dir;
 	HANDLE		sub_pid;
-	union 
+	union
 	{
 		HANDLE		obj_pid;
 	};
-	WCHAR		src_path[MAXPATHLEN];
 	WCHAR		des_path[MAXPATHLEN];
-	union 
+	union
 	{
 		FILE_BASIC_INFORMATION	fbi;
 		WCHAR		new_name[MAXPATHLEN];
 		WCHAR		key_value[MAXPATHLEN];
 	};
-	
-} HIPS_RULE_NODE, *PHIPS_RULE_NODE;
 
+} HIPS_RULE_NODE, *PHIPS_RULE_NODE;
 typedef struct _USER_DATA
 {
 	UCHAR		option;

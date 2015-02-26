@@ -2,11 +2,9 @@
 #include "filemon.h"
 #include "processmon.h"
 #include "regmon.h"
-#include "common.h"
 #include <Strsafe.h>
 
 
-extern QUERY_INFO_PROCESS	g_ZwQueryInformationProcess;
 PDEVICE_OBJECT              g_DevObj = NULL;
 BOOLEAN						g_bHipsInit = FALSE;
 HANDLE						g_currentPid = NULL;
@@ -217,7 +215,6 @@ BOOLEAN load_global_config(PUNICODE_STRING registryPath)
 	{
 		return FALSE;
 	}
-
 	RtlInitUnicodeString(&valueName,L"service_name");
 	RtlZeroMemory(buffer, 512);
 	status = ZwQueryValueKey(hKey, &valueName, KeyValuePartialInformation, buffer, 512, &resultLength);
@@ -272,17 +269,6 @@ DriverEntry (
 	if (!load_global_config(RegistryPath))
 	{
 		return status;
-	}
-
-	if (NULL == g_ZwQueryInformationProcess)
-	{
-		UNICODE_STRING routineName;
-		RtlInitUnicodeString(&routineName, L"ZwQueryInformationProcess");
-		g_ZwQueryInformationProcess =(QUERY_INFO_PROCESS)MmGetSystemRoutineAddress(&routineName);
-		if (NULL == g_ZwQueryInformationProcess)
-		{
-			return STATUS_UNSUCCESSFUL;
-		}
 	}
 
 	for (; nIndex < IRP_MJ_MAXIMUM_FUNCTION; ++nIndex)

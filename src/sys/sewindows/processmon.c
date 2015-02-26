@@ -1,6 +1,5 @@
 #include "main.h"
 #include "processmon.h"
-#include "common.h"
 #include "lpc.h"
 #include "regmon.h"
 #include "filemon.h"
@@ -17,9 +16,6 @@ static BOOLEAN				g_bSetCreateProcessNotify = FALSE;
 OB_PREOP_CALLBACK_STATUS pre_procopration_callback( PVOID RegistrationContext, POB_PRE_OPERATION_INFORMATION pOperationInformation)
 {
 	HIPS_RULE_NODE	Pi;
-	PWCHAR			pPath = NULL;
-	WCHAR			tmpPath[MAXPATHLEN] = { 0 };
-	WCHAR			wszLongName[MAXPATHLEN] = { 0 };
 	HANDLE			target_pid = NULL;
 	ACCESS_MASK		OriginalDesiredAccess = 0;
 	PACCESS_MASK	DesiredAccess = NULL;
@@ -31,7 +27,7 @@ OB_PREOP_CALLBACK_STATUS pre_procopration_callback( PVOID RegistrationContext, P
 
 	if (pOperationInformation->ObjectType == *PsThreadType)
 	{
-		return OB_PREOP_SUCCESS;
+		target_pid = PsGetThreadProcessId ((PETHREAD)pOperationInformation->Object);
 	}
 	else if (pOperationInformation->ObjectType == *PsProcessType)
 	{
@@ -64,44 +60,8 @@ OB_PREOP_CALLBACK_STATUS pre_procopration_callback( PVOID RegistrationContext, P
 	RtlZeroMemory(&Pi, sizeof(HIPS_RULE_NODE));
 	Pi.major_type = PROC_OP;
 	Pi.sub_pid = PsGetCurrentProcessId();		
-	
-	
-	pPath = get_proc_name_by_pid(Pi.sub_pid, tmpPath);
-	if (NULL == pPath )
-	{
-		return OB_PREOP_SUCCESS;
-	}
-
-	if (is_short_name_path(pPath))
-	{
-		convert_short_name_to_long(wszLongName, pPath, sizeof(WCHAR)*MAXPATHLEN);
-		RtlCopyMemory(pPath, wszLongName, sizeof(WCHAR)*MAXPATHLEN);
-	}
-
-	if (!get_dos_name(pPath, Pi.src_path))
-	{
-		StringCbCopyW(Pi.src_path, sizeof(Pi.src_path), pPath);
-	}
-
 
 	Pi.obj_pid = target_pid;		
-	
-	pPath = get_proc_name_by_pid(Pi.obj_pid,tmpPath);
-	if (NULL == pPath)
-	{
-		return OB_PREOP_SUCCESS;
-	}
-
-	if (is_short_name_path(pPath))
-	{
-		convert_short_name_to_long(wszLongName, pPath, sizeof(WCHAR)*MAXPATHLEN);
-		RtlCopyMemory(pPath, wszLongName, sizeof(WCHAR)*MAXPATHLEN);
-	}
-
-	if (!get_dos_name(pPath, Pi.des_path))
-	{
-		StringCbCopyW(Pi.des_path, sizeof(Pi.des_path), pPath);
-	}
 
 	if (pOperationInformation->ObjectType == *PsProcessType)
 	{
@@ -146,16 +106,41 @@ OB_PREOP_CALLBACK_STATUS pre_procopration_callback( PVOID RegistrationContext, P
 				*DesiredAccess &= ~PROCESS_VM_WRITE;
 			}
 		}
+		if ((OriginalDesiredAccess & PROCESS_SUSPEND_RESUME) == PROCESS_SUSPEND_RESUME)
+		{	
+			Pi.minor_type = OP_PROC_SUSPEND_RESUME;
+			if (rule_match(&Pi) == FALSE)
+			{
+				*DesiredAccess &= ~PROCESS_SUSPEND_RESUME;
+			}
+		}
+	}
+	else
+	{
+		if ((OriginalDesiredAccess & THREAD_SUSPEND_RESUME) == THREAD_SUSPEND_RESUME)
+		{	
+			Pi.minor_type = OP_THREAD_SUSPEND_RESUME;
+			if (rule_match(&Pi) == FALSE)
+			{
+				*DesiredAccess &= ~THREAD_SUSPEND_RESUME;
+			}
+		}
+
+		if ((OriginalDesiredAccess & THREAD_TERMINATE) == THREAD_TERMINATE)
+		{	
+			Pi.minor_type = OP_THREAD_KILL;
+			if (rule_match(&Pi) == FALSE)
+			{
+				*DesiredAccess &= ~THREAD_TERMINATE;
+			}
+		}
 	}
 	return OB_PREOP_SUCCESS;
 }
 
 VOID create_process_notity_routine( PEPROCESS Process, HANDLE ProcessId, PPS_CREATE_NOTIFY_INFO CreateInfo)
 {
-	PWCHAR pPath = NULL;
 	HIPS_RULE_NODE Pi;
-	WCHAR	tmpPath[MAXPATHLEN] = { 0 };
-	WCHAR	wszLongName[MAXPATHLEN] = { 0 };
 	RtlZeroMemory(&Pi, sizeof(HIPS_RULE_NODE));
 	Pi.major_type = PROC_OP;
 
@@ -169,35 +154,7 @@ VOID create_process_notity_routine( PEPROCESS Process, HANDLE ProcessId, PPS_CRE
 		Pi.sub_pid = CreateInfo->ParentProcessId;
 		Pi.obj_pid = ProcessId;
 		Pi.minor_type = OP_PROC_CREATE_PROCESS;
-		pPath = get_proc_name_by_pid(Pi.sub_pid, tmpPath);
-		if (NULL == pPath)
-		{
-			return ;
-		}
-
-		if (is_short_name_path(pPath))
-		{
-			convert_short_name_to_long(wszLongName, pPath, sizeof(WCHAR)*MAXPATHLEN);
-			StringCbCopyW(pPath, sizeof(WCHAR)*MAXPATHLEN, wszLongName);
-		}
-
-		if (!get_dos_name(pPath, Pi.src_path))
-		{
-			StringCbCopyW(Pi.src_path, sizeof(Pi.src_path), pPath);
-		}
-
-		StringCbCopyNW(tmpPath, sizeof(tmpPath), CreateInfo->ImageFileName->Buffer, CreateInfo->ImageFileName->Length);
-
-		if (is_short_name_path(tmpPath))
-		{
-			convert_short_name_to_long(wszLongName, tmpPath, sizeof(WCHAR)*MAXPATHLEN);
-			StringCbCopyW(tmpPath, sizeof(WCHAR)*MAXPATHLEN,wszLongName);
-		}
-
-		if (!get_dos_name(tmpPath, Pi.des_path))
-		{
-			StringCbCopyW(Pi.des_path, sizeof(Pi.des_path), tmpPath);
-		}
+		StringCbCopyNW(Pi.des_path, sizeof(Pi.des_path), CreateInfo->ImageFileName->Buffer, CreateInfo->ImageFileName->Length);
 		if (rule_match(&Pi) == FALSE)
 		{
 			CreateInfo->CreationStatus = STATUS_UNSUCCESSFUL;

@@ -69,6 +69,7 @@ BOOLEAN rule_match(PHIPS_RULE_NODE hrn)
 	}
 }
 
+
 BOOLEAN notify_process_exit(HANDLE pid)
 {
 	USER_DATA		ud;

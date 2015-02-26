@@ -1,17 +1,8 @@
 #include "main.h"
 #include "regmon.h"
-#include "common.h"
 #include <strsafe.h>
 #include <ntstrsafe.h>
 #include "lpc.h"
-
-struct
-{
-	WCHAR	destPath[260];
-	ULONG	dstlen;
-	WCHAR	srcPath[260];
-	ULONG	srclen;
-} g_RegisterPath[2];
 
 typedef struct _LOOK_ASIDE_BUFFER_MNG
 {
@@ -33,7 +24,6 @@ static BOOLEAN g_RegisterCallback = FALSE;
 static BOOLEAN GetRegistryObjectCompleteName(PUNICODE_STRING pRegistryPath, PVOID pRegistryObject)
 {
 	BOOLEAN foundCompleteName = FALSE;
-	int		try_count = 0;
 	NTSTATUS status;
 	ULONG returnedLength;
 	PUNICODE_STRING pObjectName = NULL;
@@ -46,7 +36,6 @@ static BOOLEAN GetRegistryObjectCompleteName(PUNICODE_STRING pRegistryPath, PVOI
 	status = ObQueryNameString(pRegistryObject, (POBJECT_NAME_INFORMATION)pObjectName, 0, &returnedLength);
 	if (status == STATUS_INFO_LENGTH_MISMATCH && returnedLength < g_RegistryManager.Lookaside_obj_name.buflen)
 	{
-try_again:
 		pObjectName = ExAllocateFromPagedLookasideList(&(g_RegistryManager.Lookaside_obj_name.Lookaside));
 		if (pObjectName)
 		{
@@ -59,17 +48,40 @@ try_again:
 			}
 			ExFreeToPagedLookasideList(&(g_RegistryManager.Lookaside_obj_name.Lookaside), pObjectName);
 		}
-		else
-		{
-			if (try_count < 10)
-			{
-				try_count++;
-				goto try_again;
-			}
-		}
 	}
 	return foundCompleteName;
 }
+
+PWCHAR mywcsistr(PWCHAR s1, PWCHAR s2)
+{
+	wchar_t * s = s1;
+	wchar_t * p = s2;
+    do
+	{
+		if (!*p)
+		{
+			return s1;
+		}
+
+		if ((*p == *s) || (towlower(*p) == towlower(*s)))
+        {
+            ++p;
+            ++s;
+        }
+        else
+        {
+			p = s2;
+			if (!*s)
+			{
+				return NULL;
+			}
+			s = ++s1;
+        }
+
+	} while (1);
+    return NULL;
+}
+
 
 static NTSTATUS RegistryCallback(IN PVOID CallbackContext,
 	IN PVOID  Argument1,
@@ -81,10 +93,8 @@ static NTSTATUS RegistryCallback(IN PVOID CallbackContext,
 	BOOLEAN registryEventIsValid = FALSE;
 	int type;
 	UNICODE_STRING registryPath;
-	PWCHAR pPath = NULL;
 	PHIPS_RULE_NODE preq_reg = NULL;
-	int				try_count = 0;
-	int				try_count1 = 0;
+
 
 	if (KeGetCurrentIrql() > PASSIVE_LEVEL)
 	{
@@ -130,30 +140,18 @@ static NTSTATUS RegistryCallback(IN PVOID CallbackContext,
 	registryPath.Buffer = NULL;
 	registryPath.Length = 0;
 	registryPath.MaximumLength = 0;
-try_again:
 	preq_reg = ExAllocateFromPagedLookasideList(&(g_RegistryManager.Lookaside_req_reg.Lookaside));
 	if (preq_reg == NULL)
 	{
-		if (try_count < 10)
-		{
-			try_count++;
-			goto try_again;
-		}
 		return STATUS_SUCCESS;
 	}
 	RtlZeroMemory(preq_reg, g_RegistryManager.Lookaside_req_reg.buflen);
 	preq_reg->major_type = REG_OP;
 	registryPath.Length = 0;
 	registryPath.MaximumLength = g_RegistryManager.Lookaside_unicode.buflen;
-try_again1:
 	registryPath.Buffer = ExAllocateFromPagedLookasideList(&(g_RegistryManager.Lookaside_unicode.Lookaside));
 	if (registryPath.Buffer == NULL)
 	{
-		if (try_count1 < 10)
-		{
-			try_count1++;
-			goto try_again1;
-		}
 		ExFreeToPagedLookasideList(&(g_RegistryManager.Lookaside_req_reg.Lookaside), preq_reg);
 		return STATUS_SUCCESS;
 	}
@@ -337,13 +335,12 @@ try_again1:
 	if (registryEventIsValid)
 	{
 		WCHAR		tmpPath[MAXPATHLEN] = { 0 };
-		WCHAR		wszLongName[MAXPATHLEN] = { 0 };
 		if (g_is_unload_allowed == FALSE)
 		{
 			StringCbCopyW(tmpPath, sizeof(WCHAR)*MAXPATHLEN, L"\\Services\\");
 			StringCbCatW(tmpPath, sizeof(WCHAR)*MAXPATHLEN, g_service_name);
 			
-			if (wcsistr(registryPath.Buffer, tmpPath))
+			if (mywcsistr(registryPath.Buffer, tmpPath))
 			{
 				ntStatus = STATUS_UNSUCCESSFUL;
 				goto err_ret;
@@ -358,10 +355,6 @@ try_again1:
 		if (registryPath.Length < MAXPATHLEN*sizeof(WCHAR))
 		{
 			StringCbCopyW(preq_reg->des_path, MAXPATHLEN*sizeof(WCHAR), registryPath.Buffer);
-			if (sw_regisster_make_path(preq_reg->des_path, sizeof(preq_reg->des_path)) == -1)
-			{
-				goto err_ret;
-			}
 		}
 		if (type == RegNtPreSetValueKey)
 		{	
@@ -373,21 +366,6 @@ try_again1:
 		}
 		preq_reg->sub_pid = PsGetCurrentProcessId();
 
-		pPath = get_proc_name_by_pid(preq_reg->sub_pid, tmpPath);
-
-		if (pPath != NULL)
-		{
-			if (is_short_name_path(pPath))
-			{
-				convert_short_name_to_long(wszLongName, pPath, sizeof(WCHAR)*MAXPATHLEN);
-				RtlCopyMemory(pPath, wszLongName, sizeof(WCHAR)*MAXPATHLEN);
-			}
-
-			if (!get_dos_name(pPath, preq_reg->src_path))
-			{
-				StringCbCopyW(preq_reg->src_path, sizeof(preq_reg->src_path), pPath);
-			}
-		}
 		if (rule_match(preq_reg) == FALSE)
 		{
 			ntStatus = STATUS_UNSUCCESSFUL;
@@ -410,56 +388,9 @@ err_ret:
 }
 
 
-int sw_regisster_make_path(WCHAR * path, ULONG lenstr)
-{
-	int i;
-	WCHAR str[MAXPATHLEN];
-	for (i = 0; i < 2; i++)
-	{
-		if (0 == _wcsnicmp(path, g_RegisterPath[i].srcPath, g_RegisterPath[i].srclen) && wcslen(path) != g_RegisterPath[i].srclen)
-		{
-			break;
-		}
-	}
-	if (i >= 2)
-	{
-		return -1;
-	}
-
-	str[0] = L'\0';
-	RtlStringCbCatW(str, sizeof(str), g_RegisterPath[i].destPath);
-	RtlStringCbCatW(str, sizeof(str), path + g_RegisterPath[i].srclen);
-
-	wcscpy(path, str);
-	
-	return 0;
-}
-
-NTSTATUS RegisterPathInit()
-{
-	wcscpy(g_RegisterPath[0].destPath, L"HKEY_LOCAL_MACHINE");
-	wcscpy(g_RegisterPath[0].srcPath, L"\\Registry\\Machine");
-	g_RegisterPath[0].dstlen = (ULONG)wcslen(g_RegisterPath[0].destPath);
-	g_RegisterPath[0].srclen = (ULONG)wcslen(g_RegisterPath[0].srcPath);
-
-	wcscpy(g_RegisterPath[1].destPath, L"HKEY_USERS");
-	wcscpy(g_RegisterPath[1].srcPath, L"\\Registry\\User");
-	g_RegisterPath[1].dstlen = (ULONG)wcslen(g_RegisterPath[1].destPath);
-	g_RegisterPath[1].srclen = (ULONG)wcslen(g_RegisterPath[1].srcPath);
-
-	return STATUS_SUCCESS;
-}
-
-
 NTSTATUS sw_register_init(PDRIVER_OBJECT pDriverObject)
 {
 	NTSTATUS status = STATUS_UNSUCCESSFUL;
-	status = RegisterPathInit();
-	if (!NT_SUCCESS(status))
-	{
-		return status;
-	}
-	
 	g_RegistryManager.Lookaside_obj_name.buflen = 1024;
 	ExInitializePagedLookasideList(&(g_RegistryManager.Lookaside_obj_name.Lookaside), NULL, NULL, 0, g_RegistryManager.Lookaside_obj_name.buflen, 'objn', 0);
 	g_RegistryManager.Lookaside_req_reg.buflen = sizeof(HIPS_RULE_NODE);

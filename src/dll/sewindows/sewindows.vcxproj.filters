@@ -39,7 +39,13 @@
     <ClInclude Include="read_write_lock.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="user_list.h">
+    <ClInclude Include="avl_tree.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="lib.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="proc_info_list.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -62,7 +68,13 @@
     <ClCompile Include="read_write_lock.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="user_list.cpp">
+    <ClCompile Include="avl_tree.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="lib.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="proc_info_list.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
