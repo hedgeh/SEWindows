@@ -65,7 +65,7 @@ BOOLEAN insert_to_procinfo_list(DWORD pid, const WCHAR* user_name,const WCHAR* p
 	lock_write(&g_read_write_lock);
 	pnode = avl_tree_add_node(&g_avl_p2u_list,&info->avl_entry);
 	unlock_write(&g_read_write_lock);
-	printf("insert_to_procinfo_list \nproc_path:%ws\nuser_name %ws\n",info->proc_path,info->user_name);
+//	printf("insert_to_procinfo_list \nproc_path:%ws\nuser_name %ws\n",info->proc_path,info->user_name);
 	return  (pnode==NULL);
 }
 
@@ -85,7 +85,7 @@ void delete_entry_by_pid(DWORD pid)
 		avl_tree_remove_node(&g_avl_p2u_list,pnode);
 		unlock_write(&g_read_write_lock);
 		pprocess_info p2u1 = CONTAINING_RECORD(pnode, process_info, avl_entry);
-		printf("delete_entry_by_pid \nproc_path:%ws\nuser_name %ws\n",p2u1->proc_path,p2u1->user_name);
+//		printf("delete_entry_by_pid \nproc_path:%ws\nuser_name %ws\n",p2u1->proc_path,p2u1->user_name);
 		if (p2u1)
 		{
 			free(p2u1);
@@ -142,7 +142,7 @@ void bulid_p2u_map()
 
 	if(procSnap == INVALID_HANDLE_VALUE)
 	{
-		printf("CreateToolhelp32Snapshot failed, %d ",GetLastError());
+	//	printf("CreateToolhelp32Snapshot failed, %d ",GetLastError());
 		return;
 	}
 	

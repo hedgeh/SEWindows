@@ -655,7 +655,7 @@ BOOLEAN delete_unprotected_sewin(const TCHAR* lpszServiceName)
 
 	if (RegCreateKeyEx(HKEY_LOCAL_MACHINE, szTempStr, 0, _T(""), REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS, NULL, &hKey, (LPDWORD)&dwData) != ERROR_SUCCESS)
 	{
-		printf("RegCreateKeyEx err\n");
+	//	printf("RegCreateKeyEx err\n");
 		return FALSE;
 	}
 
