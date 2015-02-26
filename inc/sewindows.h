@@ -12,7 +12,7 @@
 #define SEWIN_MODE_INTERCEPT      1    // Intercept mode
 #define SEWIN_MODE_NOTIFY         2    // Notify    mode
 
-#define SEWIN_TYPE_FILE         0x1    // File      operations
+#define SEWIN_TYPE_FILE         0x1    // File    	operations
 #define SEWIN_TYPE_PROC         0x2    // Process   operations
 #define SEWIN_TYPE_REG          0x4    // Registery operations
 
@@ -60,16 +60,17 @@ struct sewin_operations {
     BOOLEAN(*process_read_mem)      (WCHAR *user_name, WCHAR *process, WCHAR *dst_proc);
     BOOLEAN(*process_write_mem)     (WCHAR *user_name, WCHAR *process, WCHAR *dst_proc);
     BOOLEAN(*process_set_mem_attr)  (WCHAR *user_name, WCHAR *process, WCHAR *dst_proc);
+    BOOLEAN(*process_susresume)     (WCHAR *user_name, WCHAR *process, WCHAR *dst_proc);
+    BOOLEAN(*thread_susresume)      (WCHAR *user_name, WCHAR *process, WCHAR *dst_proc);
+    BOOLEAN(*thread_kill)           (WCHAR *user_name, WCHAR *process, WCHAR *dst_proc);
 
     // Registery operations
-    BOOLEAN(*reg_create_key)        (WCHAR *user_name, WCHAR *process, WCHAR *reg_path);
-    BOOLEAN(*reg_delete_key)        (WCHAR *user_name, WCHAR *process, WCHAR *reg_path);
-    BOOLEAN(*reg_enum_key)          (WCHAR *user_name, WCHAR *process, WCHAR *reg_path);
-    BOOLEAN(*reg_rename_key)        (WCHAR *user_name, WCHAR *process, WCHAR *src_path, WCHAR *new_name);
-    BOOLEAN(*reg_set_value)         (WCHAR *user_name, WCHAR *process, WCHAR *reg_path, WCHAR *reg_value);
-    BOOLEAN(*reg_delete_value)      (WCHAR *user_name, WCHAR *process, WCHAR *reg_path);
     BOOLEAN(*reg_read_key)          (WCHAR *user_name, WCHAR *process, WCHAR *reg_path);
-    BOOLEAN(*reg_enum_value)        (WCHAR *user_name, WCHAR *process, WCHAR *reg_path);
+    BOOLEAN(*reg_delete_value)      (WCHAR *user_name, WCHAR *process, WCHAR *reg_path);
+    BOOLEAN(*reg_create_key)        (WCHAR *user_name, WCHAR *process, WCHAR *reg_path);
+    BOOLEAN(*reg_set_value)         (WCHAR *user_name, WCHAR *process, WCHAR *reg_path, WCHAR *reg_value);
+    BOOLEAN(*reg_delete_key)        (WCHAR *user_name, WCHAR *process, WCHAR *reg_path);
+    BOOLEAN(*reg_rename_key)        (WCHAR *user_name, WCHAR *process, WCHAR *src_path, WCHAR *new_name);
     BOOLEAN(*reg_save_key)          (WCHAR *user_name, WCHAR *process, WCHAR *reg_path);
     BOOLEAN(*reg_restore_key)       (WCHAR *user_name, WCHAR *process, WCHAR *reg_path);
     BOOLEAN(*reg_replace)           (WCHAR *user_name, WCHAR *process, WCHAR *reg_path);
@@ -89,7 +90,7 @@ SEWINDOWS_API BOOLEAN sewin_init(void);
  * sewin_setoption : set working mode
  *
  * @param mode : SEWIN_MODE_INTERCEPT or SEWIN_MODE_NOTIFY
- * @param type : SEWIN_TYPE_FILE | SEWIN_TYPE_PROC | SEWIN_TYPE_REG
+ * @param type : SEWIN_TYPE_FILE | SEWIN_TYPE_FROC | SEWIN_TYPE_REG
  *
  * return :  TRUE  - success
  *           FALSE - Failed

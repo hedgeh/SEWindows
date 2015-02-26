@@ -13,7 +13,7 @@
 #define SEWIN_MODE_NOTIFY         2    // Notify    mode
 
 #define SEWIN_TYPE_FILE         0x1    // File    	operations
-#define SEWIN_TYPE_FROC         0x2    // Process   operations
+#define SEWIN_TYPE_PROC         0x2    // Process   operations
 #define SEWIN_TYPE_REG          0x4    // Registery operations
 
 // File (dir) Attribute
@@ -60,9 +60,9 @@ struct sewin_operations {
     BOOLEAN(*process_read_mem)      (WCHAR *user_name, WCHAR *process, WCHAR *dst_proc);
     BOOLEAN(*process_write_mem)     (WCHAR *user_name, WCHAR *process, WCHAR *dst_proc);
     BOOLEAN(*process_set_mem_attr)  (WCHAR *user_name, WCHAR *process, WCHAR *dst_proc);
-	BOOLEAN(*process_susresume)		(WCHAR *user_name, WCHAR *process, WCHAR *dst_proc);
-	BOOLEAN(*thread_susresume)		(WCHAR *user_name, WCHAR *process, WCHAR *dst_proc);
-	BOOLEAN(*thread_kill)			(WCHAR *user_name, WCHAR *process, WCHAR *dst_proc);
+    BOOLEAN(*process_susresume)     (WCHAR *user_name, WCHAR *process, WCHAR *dst_proc);
+    BOOLEAN(*thread_susresume)      (WCHAR *user_name, WCHAR *process, WCHAR *dst_proc);
+    BOOLEAN(*thread_kill)           (WCHAR *user_name, WCHAR *process, WCHAR *dst_proc);
 
     // Registery operations
     BOOLEAN(*reg_read_key)          (WCHAR *user_name, WCHAR *process, WCHAR *reg_path);

@@ -109,7 +109,7 @@
 		
 		        // 进程 - 创建
 		        BOOLEAN(*process_create)        (WCHAR *user_name, WCHAR *process, WCHAR *dst_proc);
-		        // 进程 - 线程创建
+		        // 进程 - 线程远程创建
 		        BOOLEAN(*process_create_thread) (WCHAR *user_name, WCHAR *process, WCHAR *dst_proc);
 		        // 进程 - 进程结束
 		        BOOLEAN(*process_kill)          (WCHAR *user_name, WCHAR *process, WCHAR *dst_proc);
@@ -119,13 +119,17 @@
 		        BOOLEAN(*process_write_mem)     (WCHAR *user_name, WCHAR *process, WCHAR *dst_proc);
 		        // 进程 - 设置属性
 		        BOOLEAN(*process_set_mem_attr)  (WCHAR *user_name, WCHAR *process, WCHAR *dst_proc);
-		        
+		        // 进程 - 挂起进程
+                BOOLEAN(*process_susresume)     (WCHAR *user_name, WCHAR *process, WCHAR *dst_proc);
+                // 线程 - 挂起线程
+                BOOLEAN(*thread_susresume)      (WCHAR *user_name, WCHAR *process, WCHAR *dst_proc);
+                // 线程 - 结束线程
+                BOOLEAN(*thread_kill)           (WCHAR *user_name, WCHAR *process, WCHAR *dst_proc);
+                
 		        // 注册表 - 创建项
 		        BOOLEAN(*reg_create_key)        (WCHAR *user_name, WCHAR *process, WCHAR *reg_path);
 		        // 注册表 - 删除项
 		        BOOLEAN(*reg_delete_key)        (WCHAR *user_name, WCHAR *process, WCHAR *reg_path);
-		        // 注册表 - 枚举项
-		        BOOLEAN(*reg_enum_key)          (WCHAR *user_name, WCHAR *process, WCHAR *reg_path);
 		        // 注册表 - 重命名项
 		        BOOLEAN(*reg_rename_key)        (WCHAR *user_name, WCHAR *process, WCHAR *src_path, WCHAR *new_name);
 		        // 注册表 - 设置值
@@ -134,8 +138,6 @@
 		        BOOLEAN(*reg_delete_value)      (WCHAR *user_name, WCHAR *process, WCHAR *reg_path);
 		        // 注册表 - 读取项
 		        BOOLEAN(*reg_read_key)          (WCHAR *user_name, WCHAR *process, WCHAR *reg_path);
-		        // 注册表 - 枚举值
-		        BOOLEAN(*reg_enum_value)        (WCHAR *user_name, WCHAR *process, WCHAR *reg_path);
 		        // 注册表 - 导出文件
 		        BOOLEAN(*reg_save_key)          (WCHAR *user_name, WCHAR *process, WCHAR *reg_path);
 		        // 注册表 - 从文件导入
