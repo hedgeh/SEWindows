@@ -304,4 +304,5 @@ BOOLEAN	delete_unprotected_sewin(const TCHAR* lpszServiceName);
 BOOLEAN trans_file_path_ex(const WCHAR* src, WCHAR* dest);
 CString trans_file_path(const WCHAR* src);
 CString trans_reg_path(const WCHAR * path);
+BOOLEAN get_windows_directory(WCHAR* windows_path);
 #endif

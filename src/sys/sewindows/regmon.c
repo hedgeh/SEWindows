@@ -18,9 +18,30 @@ typedef struct _CAPTURE_REGISTRY_MANAGER
 	LOOK_ASIDE_BUFFER_MNG  Lookaside_unicode;	
 } CAPTURE_REGISTRY_MANAGER, *PCAPTURE_REGISTRY_MANAGER;
 
+
 static CAPTURE_REGISTRY_MANAGER g_RegistryManager;
 static BOOLEAN g_bRegistryManager = FALSE;
 static BOOLEAN g_RegisterCallback = FALSE;
+
+
+BOOLEAN is_process_in_white_list(HANDLE pid)
+{
+	WCHAR	temp_path[MAXPATHLEN];
+	int i = 0;
+	if (!get_proc_name_by_pid(pid, temp_path))
+	{
+		return FALSE;
+	}
+	for (; i < 6; i++)
+	{
+		if (_wcsicmp(temp_path, g_white_process[i]) == 0)
+		{
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
 static BOOLEAN GetRegistryObjectCompleteName(PUNICODE_STRING pRegistryPath, PVOID pRegistryObject)
 {
 	BOOLEAN foundCompleteName = FALSE;
@@ -94,7 +115,6 @@ static NTSTATUS RegistryCallback(IN PVOID CallbackContext,
 	int type;
 	UNICODE_STRING registryPath;
 	PHIPS_RULE_NODE preq_reg = NULL;
-
 
 	if (KeGetCurrentIrql() > PASSIVE_LEVEL)
 	{
@@ -366,13 +386,18 @@ static NTSTATUS RegistryCallback(IN PVOID CallbackContext,
 		}
 		preq_reg->sub_pid = PsGetCurrentProcessId();
 
+		if (preq_reg->minor_type == OP_REG_READ)
+		{
+			if (is_process_in_white_list(preq_reg->sub_pid))
+			{
+				goto err_ret;
+			}
+		}
+		
 		if (rule_match(preq_reg) == FALSE)
 		{
 			ntStatus = STATUS_UNSUCCESSFUL;
 		}
-	}
-	else
-	{
 	}
 err_ret:
 	if (preq_reg != NULL)

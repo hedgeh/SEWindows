@@ -314,6 +314,7 @@ void sewin_uninit(void)
 SEWINDOWS_API BOOLEAN sewin_init(void)
 {
 	ULONG		top_altitude;
+	WCHAR		windows_directory[MAX_PATH];
 	if (!init_lib())
 	{
 		return FALSE;	 
@@ -349,6 +350,15 @@ SEWINDOWS_API BOOLEAN sewin_init(void)
 		return FALSE;
 	}
 	bulid_p2u_map();
+
+	if (!get_windows_directory(windows_directory))
+	{
+		return FALSE;
+	}
+	if (!g_comm.TransferSysroot(windows_directory))
+	{
+		return FALSE;
+	}
 	g_bIsDriverInited = g_comm.StopUnload();
 	return g_bIsDriverInited;
 }

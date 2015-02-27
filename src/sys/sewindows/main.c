@@ -4,6 +4,7 @@
 #include "regmon.h"
 #include <Strsafe.h>
 
+typedef NTSTATUS(*QUERY_INFO_PROCESS) (HANDLE ProcessHandle, PROCESSINFOCLASS ProcessInformationClass, PVOID ProcessInformation, ULONG ProcessInformationLength, PULONG ReturnLength);
 
 PDEVICE_OBJECT              g_DevObj = NULL;
 BOOLEAN						g_bHipsInit = FALSE;
@@ -19,7 +20,73 @@ WCHAR						g_service_name[MAXNAMELEN];
 BOOLEAN						g_is_unload_allowed = FALSE;
 BOOLEAN						g_is_notify_mode = TRUE;
 PBOOLEAN					p = &g_is_proc_run;
+WCHAR						g_white_process[6][MAXPATHLEN];
+WCHAR						g_windows_directory[MAXPATHLEN];
+QUERY_INFO_PROCESS			g_ZwQueryInformationProcess = NULL;
 
+
+void build_white_process_list()
+{
+	StringCbCopyW(g_white_process[0], MAXPATHLEN*sizeof(WCHAR), g_windows_directory);
+	StringCbCatW(g_white_process[0], MAXPATHLEN*sizeof(WCHAR), L"\\WINDOWS\\explorer.exe");
+
+	StringCbCopyW(g_white_process[1], MAXPATHLEN*sizeof(WCHAR), g_windows_directory);
+	StringCbCatW(g_white_process[1], MAXPATHLEN*sizeof(WCHAR), L"\\WINDOWS\\system32\\svchost.exe");
+
+	StringCbCopyW(g_white_process[2], MAXPATHLEN*sizeof(WCHAR), g_windows_directory);
+	StringCbCatW(g_white_process[2], MAXPATHLEN*sizeof(WCHAR), L"\\WINDOWS\\system32\\lsass.exe");
+
+	StringCbCopyW(g_white_process[3], MAXPATHLEN*sizeof(WCHAR), g_windows_directory);
+	StringCbCatW(g_white_process[3], MAXPATHLEN*sizeof(WCHAR), L"\\WINDOWS\\system32\\services.exe");
+
+	StringCbCopyW(g_white_process[4], MAXPATHLEN*sizeof(WCHAR), g_windows_directory);
+	StringCbCatW(g_white_process[4], MAXPATHLEN*sizeof(WCHAR), L"\\WINDOWS\\system32\\csrss.exe");
+
+	StringCbCopyW(g_white_process[5], MAXPATHLEN*sizeof(WCHAR), g_windows_directory);
+	StringCbCatW(g_white_process[5], MAXPATHLEN*sizeof(WCHAR), L"\\WINDOWS\\system32\\winlogon.exe");
+}
+
+
+PWCHAR get_proc_name_by_pid(IN  HANDLE   dwProcessId, PWCHAR pPath)
+{
+	NTSTATUS Status = STATUS_UNSUCCESSFUL;
+	HANDLE hProcess;
+	PEPROCESS pEprocess;
+	ULONG returnedLength;
+	PUNICODE_STRING imageName;
+
+	PAGED_CODE();
+
+	Status = PsLookupProcessByProcessId(dwProcessId, &pEprocess);
+	if (!NT_SUCCESS(Status))
+	{
+		return NULL;
+	}
+	Status = ObOpenObjectByPointer(pEprocess, OBJ_KERNEL_HANDLE, NULL, 0, *PsProcessType, KernelMode, &hProcess);
+	if (!NT_SUCCESS(Status))
+	{
+		ObDereferenceObject(pEprocess);
+		return NULL;
+	}
+	Status = g_ZwQueryInformationProcess(hProcess, ProcessImageFileName, pPath, MAXPATHLEN*sizeof(WCHAR), &returnedLength);
+	if (!NT_SUCCESS(Status))
+	{
+		ZwClose(hProcess);
+		ObDereferenceObject(pEprocess);
+		return NULL;
+	}
+	else
+	{
+		ULONG len = 0;
+		imageName = (PUNICODE_STRING)pPath;
+		len = imageName->Length;
+		RtlMoveMemory(pPath, imageName->Buffer, imageName->Length);
+		pPath[len / sizeof(WCHAR)] = L'\0';
+	}
+	ZwClose(hProcess);
+	ObDereferenceObject(pEprocess);
+	return pPath;
+}
 
 DRIVER_INITIALIZE DriverEntry;
 DRIVER_UNLOAD   PtDeviceUnload;
@@ -129,6 +196,17 @@ NTSTATUS dispatch_ictl(IN PDEVICE_OBJECT pDevObj, IN PIRP pIrp)
 		break;
 	case IOCTL_SET_NOTIFY_MODE:
 		g_is_notify_mode = TRUE;
+		break;
+	case IOCTL_TRANSFER_SYSROOT:
+		if (ioBuf == NULL || inBufLength ==0)
+		{
+			status = STATUS_UNSUCCESSFUL;
+		}
+		else
+		{
+			StringCbCopyNW(g_windows_directory, MAXPATHLEN*sizeof(WCHAR), ioBuf, inBufLength);
+			build_white_process_list();
+		}
 		break;
 	default:
 		break;
@@ -264,6 +342,17 @@ DriverEntry (
 #ifdef DBG
 	__debugbreak();
 #endif
+
+	if (NULL == g_ZwQueryInformationProcess)
+	{
+		UNICODE_STRING routineName;
+		RtlInitUnicodeString(&routineName, L"ZwQueryInformationProcess");
+		g_ZwQueryInformationProcess =(QUERY_INFO_PROCESS)MmGetSystemRoutineAddress(&routineName);
+		if (NULL == g_ZwQueryInformationProcess)
+		{
+			return STATUS_UNSUCCESSFUL;
+		}
+	}
 	
 	g_DriverObject = DriverObject;
 	if (!load_global_config(RegistryPath))

@@ -45,6 +45,28 @@ FORCEINLINE PVOID get_proc_address(
 		return NULL;
 }
 
+BOOLEAN get_windows_directory(WCHAR* windows_path)
+{
+	WCHAR temp_path[MAX_PATH];
+	WCHAR cDiskSymbol[] = L"c:";
+	if (!GetWindowsDirectoryW(temp_path, MAX_PATH))
+	{
+		return FALSE;
+	}
+	cDiskSymbol[0] = temp_path[0];
+
+	if (!QueryDosDeviceW(cDiskSymbol, temp_path, MAX_PATH))
+	{
+		return FALSE;
+	}
+	if (temp_path[wcslen(temp_path) - 1] == L'\\')
+	{
+		temp_path[wcslen(temp_path) - 1] = L'0';
+	}
+	wcscpy_s(windows_path, MAX_PATH, temp_path);
+	return TRUE;
+}
+
 BOOLEAN build_file_path_table()
 {
 	RtlZeroMemory(&g_file_path_table, sizeof(FILE_PATH_TABLE)* 26);

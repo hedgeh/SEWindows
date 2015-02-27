@@ -13,6 +13,7 @@
 #define IOCTL_STOP_UNLOAD			CTL_CODE(FILE_DEVICE_UNKNOWN, 0x1010, METHOD_BUFFERED, FILE_ANY_ACCESS)
 #define IOCTL_PERMIT_UNLOAD			CTL_CODE(FILE_DEVICE_UNKNOWN, 0x1011, METHOD_BUFFERED, FILE_ANY_ACCESS)
 #define IOCTL_SET_NOTIFY_MODE		CTL_CODE(FILE_DEVICE_UNKNOWN, 0x1012, METHOD_BUFFERED, FILE_ANY_ACCESS)
+#define IOCTL_TRANSFER_SYSROOT		CTL_CODE(FILE_DEVICE_UNKNOWN, 0x1013, METHOD_BUFFERED, FILE_ANY_ACCESS)
 
 
 typedef BOOLEAN(*NotifyProc)(Param& opdata);
@@ -26,6 +27,7 @@ public:
 	BOOLEAN	InitDriver(TCHAR* lpsz_service_name, TCHAR* lpsz_path, TCHAR* lpsz_altitude, TCHAR* lpsz_portname, TCHAR* lpszLink_name);
 	BOOLEAN	OnExitProcess(TCHAR* lpsz_service_name);
 	BOOLEAN	UninsDriver(TCHAR* lpsz_service_name);
+	BOOLEAN	TransferSysroot(TCHAR* lpsz_sysroot);
 	BOOLEAN	StartProcMon(BOOLEAN Start);
 	BOOLEAN	StartRegMon(BOOLEAN Start);
 	BOOLEAN	StartFileMon(BOOLEAN Start);

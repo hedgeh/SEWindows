@@ -21,6 +21,7 @@
 #define IOCTL_STOP_UNLOAD			CTL_CODE(FILE_DEVICE_UNKNOWN, 0x1010, METHOD_BUFFERED, FILE_ANY_ACCESS)
 #define IOCTL_PERMIT_UNLOAD			CTL_CODE(FILE_DEVICE_UNKNOWN, 0x1011, METHOD_BUFFERED, FILE_ANY_ACCESS)
 #define IOCTL_SET_NOTIFY_MODE		CTL_CODE(FILE_DEVICE_UNKNOWN, 0x1012, METHOD_BUFFERED, FILE_ANY_ACCESS)
+#define IOCTL_TRANSFER_SYSROOT		CTL_CODE(FILE_DEVICE_UNKNOWN, 0x1013, METHOD_BUFFERED, FILE_ANY_ACCESS)
 
 typedef	struct _PATH_TABLE
 {
@@ -69,7 +70,6 @@ typedef struct _USER_DATA
 #define	OPTION_TO_NOTIFY	2
 #define	OPTION_PROC_EXIT	3 
 
-typedef NTSTATUS(*QUERY_INFO_PROCESS) (HANDLE ProcessHandle, PROCESSINFOCLASS ProcessInformationClass,PVOID ProcessInformation, ULONG ProcessInformationLength, PULONG ReturnLength);
 
 extern PATH_TABLE			g_path_table[26];
 extern HANDLE				g_currentPid;
@@ -82,6 +82,7 @@ extern WCHAR				g_port_name[MAXNAMELEN];
 extern WCHAR				g_symbol_name[MAXNAMELEN];
 extern BOOLEAN				g_is_unload_allowed;
 extern WCHAR				g_service_name[MAXNAMELEN];
-//extern WCHAR				g_system_dir[MAXPATHLEN];
-//extern WCHAR				g_system_exploror[MAXPATHLEN];
+extern WCHAR				g_white_process[6][MAXPATHLEN];
 extern BOOLEAN				g_is_notify_mode;
+
+PWCHAR get_proc_name_by_pid(IN  HANDLE   dwProcessId, PWCHAR pPath);
