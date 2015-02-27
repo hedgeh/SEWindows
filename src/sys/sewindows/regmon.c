@@ -12,14 +12,15 @@ typedef struct _LOOK_ASIDE_BUFFER_MNG
 
 typedef struct _CAPTURE_REGISTRY_MANAGER
 {
-	LARGE_INTEGER  registryCallbackCookie;
-	LOOK_ASIDE_BUFFER_MNG  Lookaside_req_reg;	
-	LOOK_ASIDE_BUFFER_MNG  Lookaside_obj_name;	
-	LOOK_ASIDE_BUFFER_MNG  Lookaside_unicode;	
+	LARGE_INTEGER  registry_callback_cookie;
+	LOOK_ASIDE_BUFFER_MNG  lookaside_req_reg;	
+	LOOK_ASIDE_BUFFER_MNG  lookaside_obj_name;	
+	LOOK_ASIDE_BUFFER_MNG  lookaside_unicode;	
 } CAPTURE_REGISTRY_MANAGER, *PCAPTURE_REGISTRY_MANAGER;
 
+EX_CALLBACK_FUNCTION registry_callback;
 
-static CAPTURE_REGISTRY_MANAGER g_RegistryManager;
+static CAPTURE_REGISTRY_MANAGER g_registery_mem_manager;
 static BOOLEAN g_bRegistryManager = FALSE;
 static BOOLEAN g_RegisterCallback = FALSE;
 
@@ -42,7 +43,7 @@ BOOLEAN is_process_in_white_list(HANDLE pid)
 	return FALSE;
 }
 
-static BOOLEAN GetRegistryObjectCompleteName(PUNICODE_STRING pRegistryPath, PVOID pRegistryObject)
+static BOOLEAN get_registry_name_by_obj(PUNICODE_STRING pRegistryPath, PVOID pRegistryObject)
 {
 	BOOLEAN foundCompleteName = FALSE;
 	NTSTATUS status;
@@ -55,19 +56,19 @@ static BOOLEAN GetRegistryObjectCompleteName(PUNICODE_STRING pRegistryPath, PVOI
 	}
 
 	status = ObQueryNameString(pRegistryObject, (POBJECT_NAME_INFORMATION)pObjectName, 0, &returnedLength);
-	if (status == STATUS_INFO_LENGTH_MISMATCH && returnedLength < g_RegistryManager.Lookaside_obj_name.buflen)
+	if (status == STATUS_INFO_LENGTH_MISMATCH && returnedLength < g_registery_mem_manager.lookaside_obj_name.buflen)
 	{
-		pObjectName = ExAllocateFromPagedLookasideList(&(g_RegistryManager.Lookaside_obj_name.Lookaside));
+		pObjectName = ExAllocateFromPagedLookasideList(&(g_registery_mem_manager.lookaside_obj_name.Lookaside));
 		if (pObjectName)
 		{
-			RtlZeroMemory(pObjectName, g_RegistryManager.Lookaside_obj_name.buflen);
+			RtlZeroMemory(pObjectName, g_registery_mem_manager.lookaside_obj_name.buflen);
 			status = ObQueryNameString(pRegistryObject, (POBJECT_NAME_INFORMATION)pObjectName, returnedLength, &returnedLength);
 			if (NT_SUCCESS(status))
 			{
 				RtlUnicodeStringCopy(pRegistryPath, pObjectName);
 				foundCompleteName = TRUE;
 			}
-			ExFreeToPagedLookasideList(&(g_RegistryManager.Lookaside_obj_name.Lookaside), pObjectName);
+			ExFreeToPagedLookasideList(&(g_registery_mem_manager.lookaside_obj_name.Lookaside), pObjectName);
 		}
 	}
 	return foundCompleteName;
@@ -104,9 +105,7 @@ PWCHAR mywcsistr(PWCHAR s1, PWCHAR s2)
 }
 
 
-static NTSTATUS RegistryCallback(IN PVOID CallbackContext,
-	IN PVOID  Argument1,
-	IN PVOID  Argument2)
+ NTSTATUS registry_callback(IN PVOID CallbackContext,IN PVOID  Argument1,IN PVOID  Argument2)
 {
 	ULONG registryDataLength = 0;
 	ULONG registryDataType = 0;
@@ -121,7 +120,7 @@ static NTSTATUS RegistryCallback(IN PVOID CallbackContext,
 		return STATUS_SUCCESS;
 	}
 
-	if ((PsGetCurrentProcessId() == (HANDLE)0) || g_currentPid == PsGetCurrentProcessId())
+	if ((PsGetCurrentProcessId() == (HANDLE)0) || g_current_pid == PsGetCurrentProcessId())
 	{
 		return STATUS_SUCCESS;
 	}
@@ -160,22 +159,22 @@ static NTSTATUS RegistryCallback(IN PVOID CallbackContext,
 	registryPath.Buffer = NULL;
 	registryPath.Length = 0;
 	registryPath.MaximumLength = 0;
-	preq_reg = ExAllocateFromPagedLookasideList(&(g_RegistryManager.Lookaside_req_reg.Lookaside));
+	preq_reg = ExAllocateFromPagedLookasideList(&(g_registery_mem_manager.lookaside_req_reg.Lookaside));
 	if (preq_reg == NULL)
 	{
 		return STATUS_SUCCESS;
 	}
-	RtlZeroMemory(preq_reg, g_RegistryManager.Lookaside_req_reg.buflen);
+	RtlZeroMemory(preq_reg, g_registery_mem_manager.lookaside_req_reg.buflen);
 	preq_reg->major_type = REG_OP;
 	registryPath.Length = 0;
-	registryPath.MaximumLength = g_RegistryManager.Lookaside_unicode.buflen;
-	registryPath.Buffer = ExAllocateFromPagedLookasideList(&(g_RegistryManager.Lookaside_unicode.Lookaside));
+	registryPath.MaximumLength = g_registery_mem_manager.lookaside_unicode.buflen;
+	registryPath.Buffer = ExAllocateFromPagedLookasideList(&(g_registery_mem_manager.lookaside_unicode.Lookaside));
 	if (registryPath.Buffer == NULL)
 	{
-		ExFreeToPagedLookasideList(&(g_RegistryManager.Lookaside_req_reg.Lookaside), preq_reg);
+		ExFreeToPagedLookasideList(&(g_registery_mem_manager.lookaside_req_reg.Lookaside), preq_reg);
 		return STATUS_SUCCESS;
 	}
-	RtlZeroMemory(registryPath.Buffer, g_RegistryManager.Lookaside_unicode.buflen);
+	RtlZeroMemory(registryPath.Buffer, g_registery_mem_manager.lookaside_unicode.buflen);
 	preq_reg->minor_type = 0;
 	__try
 	{
@@ -184,7 +183,7 @@ static NTSTATUS RegistryCallback(IN PVOID CallbackContext,
 		case RegNtPreDeleteKey:
 		{	
 			PREG_DELETE_KEY_INFORMATION deleteKey = (PREG_DELETE_KEY_INFORMATION)Argument2;
-			registryEventIsValid = GetRegistryObjectCompleteName(&registryPath, deleteKey->Object);
+			registryEventIsValid = get_registry_name_by_obj(&registryPath, deleteKey->Object);
 			
 			preq_reg->minor_type = OP_REG_DELETE_KEY;
 			break;
@@ -200,7 +199,7 @@ static NTSTATUS RegistryCallback(IN PVOID CallbackContext,
 		case RegNtPreCreateKeyEx:
 		{	
 			PREG_CREATE_KEY_INFORMATION createKey = (PREG_CREATE_KEY_INFORMATION)Argument2;
-			registryEventIsValid = GetRegistryObjectCompleteName(&registryPath, createKey->RootObject);
+			registryEventIsValid = get_registry_name_by_obj(&registryPath, createKey->RootObject);
 			RtlUnicodeStringCatString(&registryPath, L"\\");
 			RtlAppendUnicodeStringToString(&registryPath, createKey->CompleteName);
 			preq_reg->minor_type = OP_REG_CREATE_KEY;
@@ -209,7 +208,7 @@ static NTSTATUS RegistryCallback(IN PVOID CallbackContext,
 		case RegNtPreDeleteValueKey:	
 		{	
 			PREG_DELETE_VALUE_KEY_INFORMATION deleteValueKey = (PREG_DELETE_VALUE_KEY_INFORMATION)Argument2;
-			registryEventIsValid = GetRegistryObjectCompleteName(&registryPath, deleteValueKey->Object);
+			registryEventIsValid = get_registry_name_by_obj(&registryPath, deleteValueKey->Object);
 			if ((registryEventIsValid) && (deleteValueKey->ValueName->Length > 0))
 			{
 				RtlUnicodeStringCatString(&registryPath, L"\\");
@@ -222,7 +221,7 @@ static NTSTATUS RegistryCallback(IN PVOID CallbackContext,
 		case RegNtPreSetValueKey:	
 		{
 			PREG_SET_VALUE_KEY_INFORMATION setValueKey = (PREG_SET_VALUE_KEY_INFORMATION)Argument2;
-			registryEventIsValid = GetRegistryObjectCompleteName(&registryPath, setValueKey->Object);
+			registryEventIsValid = get_registry_name_by_obj(&registryPath, setValueKey->Object);
 			if ((registryEventIsValid) && (setValueKey->ValueName->Length > 0))
 			{
 				registryDataType = setValueKey->Type;
@@ -237,7 +236,7 @@ static NTSTATUS RegistryCallback(IN PVOID CallbackContext,
 		case RegNtPreRenameKey:
 		{
 			PREG_RENAME_KEY_INFORMATION renameKey = (PREG_RENAME_KEY_INFORMATION)Argument2;
-			registryEventIsValid = GetRegistryObjectCompleteName(&registryPath, renameKey->Object);
+			registryEventIsValid = get_registry_name_by_obj(&registryPath, renameKey->Object);
 			StringCbCopyNW(preq_reg->new_name, sizeof(preq_reg->new_name), renameKey->NewName->Buffer, renameKey->NewName->Length);
 			preq_reg->minor_type = OP_REG_RENAME;
 			break;
@@ -246,7 +245,7 @@ static NTSTATUS RegistryCallback(IN PVOID CallbackContext,
 		{	
 			PREG_ENUMERATE_KEY_INFORMATION enumerateKey = (PREG_ENUMERATE_KEY_INFORMATION)Argument2;
 			registryDataType = enumerateKey->KeyInformationClass;
-			registryEventIsValid = GetRegistryObjectCompleteName(&registryPath, enumerateKey->Object);
+			registryEventIsValid = get_registry_name_by_obj(&registryPath, enumerateKey->Object);
 			
 			preq_reg->minor_type = OP_REG_READ;
 			break;
@@ -255,7 +254,7 @@ static NTSTATUS RegistryCallback(IN PVOID CallbackContext,
 		{
 			PREG_ENUMERATE_VALUE_KEY_INFORMATION enumerateValueKey = (PREG_ENUMERATE_VALUE_KEY_INFORMATION)Argument2;
 			registryDataType = enumerateValueKey->KeyValueInformationClass;
-			registryEventIsValid = GetRegistryObjectCompleteName(&registryPath, enumerateValueKey->Object);
+			registryEventIsValid = get_registry_name_by_obj(&registryPath, enumerateValueKey->Object);
 			
 			preq_reg->minor_type = OP_REG_READ;
 			break;
@@ -264,7 +263,7 @@ static NTSTATUS RegistryCallback(IN PVOID CallbackContext,
 		{	
 			PREG_QUERY_KEY_INFORMATION queryKey = (PREG_QUERY_KEY_INFORMATION)Argument2;
 			registryDataType = queryKey->KeyInformationClass;
-			registryEventIsValid = GetRegistryObjectCompleteName(&registryPath, queryKey->Object);
+			registryEventIsValid = get_registry_name_by_obj(&registryPath, queryKey->Object);
 			
 			preq_reg->minor_type = OP_REG_READ;
 			break;
@@ -272,7 +271,7 @@ static NTSTATUS RegistryCallback(IN PVOID CallbackContext,
 		case RegNtQueryValueKey:
 		{	
 			PREG_QUERY_VALUE_KEY_INFORMATION queryValueKey = (PREG_QUERY_VALUE_KEY_INFORMATION)Argument2;
-			registryEventIsValid = GetRegistryObjectCompleteName(&registryPath, queryValueKey->Object);
+			registryEventIsValid = get_registry_name_by_obj(&registryPath, queryValueKey->Object);
 			if (registryEventIsValid)
 			{
 				if (queryValueKey->ValueName->Length > 0)
@@ -293,7 +292,7 @@ static NTSTATUS RegistryCallback(IN PVOID CallbackContext,
 		case RegNtPreQueryMultipleValueKey:
 		{
 			PREG_QUERY_MULTIPLE_VALUE_KEY_INFORMATION queryMultiple = (PREG_QUERY_MULTIPLE_VALUE_KEY_INFORMATION)Argument2;
-			registryEventIsValid = GetRegistryObjectCompleteName(&registryPath, queryMultiple->Object);
+			registryEventIsValid = get_registry_name_by_obj(&registryPath, queryMultiple->Object);
 			
 			preq_reg->minor_type = OP_REG_READ;
 			break;
@@ -302,7 +301,7 @@ static NTSTATUS RegistryCallback(IN PVOID CallbackContext,
 		case RegNtPreLoadKey:
 		{ 
 			PREG_LOAD_KEY_INFORMATION queryMultiple = (PREG_LOAD_KEY_INFORMATION)Argument2;
-			registryEventIsValid = GetRegistryObjectCompleteName(&registryPath, queryMultiple->Object);
+			registryEventIsValid = get_registry_name_by_obj(&registryPath, queryMultiple->Object);
 
 			preq_reg->minor_type = OP_REG_LOAD;
 			break;
@@ -310,7 +309,7 @@ static NTSTATUS RegistryCallback(IN PVOID CallbackContext,
 		case RegNtPreUnLoadKey:
 		{
 			PREG_UNLOAD_KEY_INFORMATION queryMultiple = (PREG_UNLOAD_KEY_INFORMATION)Argument2;
-			registryEventIsValid = GetRegistryObjectCompleteName(&registryPath, queryMultiple->Object);
+			registryEventIsValid = get_registry_name_by_obj(&registryPath, queryMultiple->Object);
 
 			preq_reg->minor_type = OP_REG_UNLOAD;
 			break;
@@ -318,7 +317,7 @@ static NTSTATUS RegistryCallback(IN PVOID CallbackContext,
 		case RegNtPreSaveKey:
 		{
 			PREG_SAVE_KEY_INFORMATION queryMultiple = (PREG_SAVE_KEY_INFORMATION)Argument2;
-			registryEventIsValid = GetRegistryObjectCompleteName(&registryPath, queryMultiple->Object);
+			registryEventIsValid = get_registry_name_by_obj(&registryPath, queryMultiple->Object);
 
 			preq_reg->minor_type = OP_REG_SAVE;
 			break;
@@ -326,7 +325,7 @@ static NTSTATUS RegistryCallback(IN PVOID CallbackContext,
 		case RegNtPreRestoreKey:
 		{
 			PREG_RESTORE_KEY_INFORMATION queryMultiple = (PREG_RESTORE_KEY_INFORMATION)Argument2;
-			registryEventIsValid = GetRegistryObjectCompleteName(&registryPath, queryMultiple->Object);
+			registryEventIsValid = get_registry_name_by_obj(&registryPath, queryMultiple->Object);
 
 			preq_reg->minor_type = OP_REG_RESTORE;
 			break;
@@ -335,7 +334,7 @@ static NTSTATUS RegistryCallback(IN PVOID CallbackContext,
 		{
 			PREG_REPLACE_KEY_INFORMATION pReplace = (PREG_REPLACE_KEY_INFORMATION)Argument2;
 			
-			registryEventIsValid = GetRegistryObjectCompleteName(&registryPath, pReplace->Object);
+			registryEventIsValid = get_registry_name_by_obj(&registryPath, pReplace->Object);
 
 			preq_reg->minor_type = OP_REG_REPLACE;
 			break;
@@ -402,11 +401,11 @@ static NTSTATUS RegistryCallback(IN PVOID CallbackContext,
 err_ret:
 	if (preq_reg != NULL)
 	{
-		ExFreeToPagedLookasideList(&(g_RegistryManager.Lookaside_req_reg.Lookaside), preq_reg);
+		ExFreeToPagedLookasideList(&(g_registery_mem_manager.lookaside_req_reg.Lookaside), preq_reg);
 	}
 	if (registryPath.Buffer != NULL)
 	{
-		ExFreeToPagedLookasideList(&(g_RegistryManager.Lookaside_unicode.Lookaside), registryPath.Buffer);
+		ExFreeToPagedLookasideList(&(g_registery_mem_manager.lookaside_unicode.Lookaside), registryPath.Buffer);
 	}
 
 	return ntStatus;
@@ -416,16 +415,16 @@ err_ret:
 NTSTATUS sw_register_init(PDRIVER_OBJECT pDriverObject)
 {
 	NTSTATUS status = STATUS_UNSUCCESSFUL;
-	g_RegistryManager.Lookaside_obj_name.buflen = 1024;
-	ExInitializePagedLookasideList(&(g_RegistryManager.Lookaside_obj_name.Lookaside), NULL, NULL, 0, g_RegistryManager.Lookaside_obj_name.buflen, 'objn', 0);
-	g_RegistryManager.Lookaside_req_reg.buflen = sizeof(HIPS_RULE_NODE);
-	ExInitializePagedLookasideList(&(g_RegistryManager.Lookaside_req_reg.Lookaside), NULL, NULL, 0, g_RegistryManager.Lookaside_req_reg.buflen, 'objn', 0);
-	g_RegistryManager.Lookaside_unicode.buflen = NTSTRSAFE_UNICODE_STRING_MAX_CCH * sizeof(WCHAR);
-	ExInitializePagedLookasideList(&(g_RegistryManager.Lookaside_unicode.Lookaside), NULL, NULL, 0, g_RegistryManager.Lookaside_unicode.buflen, 'objn', 0);
+	g_registery_mem_manager.lookaside_obj_name.buflen = 1024;
+	ExInitializePagedLookasideList(&(g_registery_mem_manager.lookaside_obj_name.Lookaside), NULL, NULL, 0, g_registery_mem_manager.lookaside_obj_name.buflen, 'objn', 0);
+	g_registery_mem_manager.lookaside_req_reg.buflen = sizeof(HIPS_RULE_NODE);
+	ExInitializePagedLookasideList(&(g_registery_mem_manager.lookaside_req_reg.Lookaside), NULL, NULL, 0, g_registery_mem_manager.lookaside_req_reg.buflen, 'objn', 0);
+	g_registery_mem_manager.lookaside_unicode.buflen = NTSTRSAFE_UNICODE_STRING_MAX_CCH * sizeof(WCHAR);
+	ExInitializePagedLookasideList(&(g_registery_mem_manager.lookaside_unicode.Lookaside), NULL, NULL, 0, g_registery_mem_manager.lookaside_unicode.buflen, 'objn', 0);
 
 	g_bRegistryManager = TRUE;
 		 
-	status = CmRegisterCallback(RegistryCallback, &g_RegistryManager, &(g_RegistryManager.registryCallbackCookie));
+	status = CmRegisterCallback(registry_callback, &g_registery_mem_manager, &(g_registery_mem_manager.registry_callback_cookie));
 	if (NT_SUCCESS(status))
 	{
 		g_RegisterCallback = TRUE;
@@ -437,15 +436,15 @@ NTSTATUS sw_register_uninit(PDRIVER_OBJECT pDriverObject)
 {
 	if (g_bRegistryManager)
 	{
-		ExDeletePagedLookasideList(&(g_RegistryManager.Lookaside_obj_name.Lookaside));
-		ExDeletePagedLookasideList(&(g_RegistryManager.Lookaside_req_reg.Lookaside));
-		ExDeletePagedLookasideList(&(g_RegistryManager.Lookaside_unicode.Lookaside));
+		ExDeletePagedLookasideList(&(g_registery_mem_manager.lookaside_obj_name.Lookaside));
+		ExDeletePagedLookasideList(&(g_registery_mem_manager.lookaside_req_reg.Lookaside));
+		ExDeletePagedLookasideList(&(g_registery_mem_manager.lookaside_unicode.Lookaside));
 		g_bRegistryManager = FALSE;
 	}
 	
 	if (g_RegisterCallback)
 	{
-		CmUnRegisterCallback(g_RegistryManager.registryCallbackCookie);
+		CmUnRegisterCallback(g_registery_mem_manager.registry_callback_cookie);
 		g_RegisterCallback = FALSE;
 	}
 	return STATUS_SUCCESS;

@@ -72,12 +72,12 @@ typedef struct _USER_DATA
 
 
 extern PATH_TABLE			g_path_table[26];
-extern HANDLE				g_currentPid;
+extern HANDLE				g_current_pid;
 extern BOOLEAN				g_is_reg_run;
 extern BOOLEAN				g_is_proc_run;
 extern BOOLEAN				g_is_file_run;
-extern PDRIVER_OBJECT		g_DriverObject;
-extern PDEVICE_OBJECT		g_DevObj;
+extern PDRIVER_OBJECT		g_driver_obj;
+extern PDEVICE_OBJECT		g_device_obj;
 extern WCHAR				g_port_name[MAXNAMELEN];
 extern WCHAR				g_symbol_name[MAXNAMELEN];
 extern BOOLEAN				g_is_unload_allowed;

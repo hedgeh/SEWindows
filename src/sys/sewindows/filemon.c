@@ -57,7 +57,7 @@ NTSTATUS sw_unload(FLT_FILTER_UNLOAD_FLAGS Flags)
 {
 	UNICODE_STRING deviceDosName;
 	UNREFERENCED_PARAMETER(Flags);
-
+	PAGED_CODE();
 	if (!g_is_unload_allowed)
 	{
 		return STATUS_FLT_DO_NOT_DETACH;
@@ -65,17 +65,17 @@ NTSTATUS sw_unload(FLT_FILTER_UNLOAD_FLAGS Flags)
 	g_is_file_run = FALSE;
 	g_is_proc_run = FALSE;
 	g_is_reg_run = FALSE;
-	sw_register_uninit(g_DriverObject);
+	sw_register_uninit(g_driver_obj);
 #if (NTDDI_VERSION >= NTDDI_VISTA)
-	sw_uninit_procss(g_DriverObject);
+	sw_uninit_procss(g_driver_obj);
 #endif
-	sw_uninit_minifliter(g_DriverObject);
+	sw_uninit_minifliter(g_driver_obj);
 
-	if (g_DevObj)
+	if (g_device_obj)
 	{
-		IoUnregisterShutdownNotification(g_DevObj);
-		IoDeleteDevice(g_DevObj);
-		g_DevObj = NULL;
+		IoUnregisterShutdownNotification(g_device_obj);
+		IoDeleteDevice(g_device_obj);
+		g_device_obj = NULL;
 	}
 	RtlInitUnicodeString(&deviceDosName, g_symbol_name);
 	IoDeleteSymbolicLink(&deviceDosName);
@@ -254,7 +254,7 @@ FLT_POSTOP_CALLBACK_STATUS sw_post_create_callback( PFLT_CALLBACK_DATA Data, PCF
 	PFLT_FILE_NAME_INFORMATION		nameInfo = NULL;
 	WCHAR							tmpPath[MAXPATHLEN] = { 0 };
 	FILE_DISPOSITION_INFORMATION	fdi;
-
+	PAGED_CODE();
 	if ((PsGetCurrentProcessId() == (HANDLE)4) || (PsGetCurrentProcessId() == (HANDLE)0) || g_is_file_run == FALSE)
 	{
 		return FLT_POSTOP_FINISHED_PROCESSING;
@@ -367,7 +367,7 @@ FLT_PREOP_CALLBACK_STATUS sw_pre_setinfo_callback( PFLT_CALLBACK_DATA Data, PCFL
 	PFLT_FILE_NAME_INFORMATION	nameInfo = NULL;
 	WCHAR						tmpPath[MAXPATHLEN] = { 0 };
 
-
+	PAGED_CODE();
 	if ((PsGetCurrentProcessId() == (HANDLE)4) || (PsGetCurrentProcessId() == (HANDLE)0) || g_is_file_run == FALSE)
 	{
 		return FLT_PREOP_SUCCESS_NO_CALLBACK;
@@ -509,7 +509,7 @@ IN BOOLEAN  Create
 {
 	if (Create == FALSE)
 	{
-		if (g_currentPid == ProcessId)
+		if (g_current_pid == ProcessId)
 		{
 			g_is_file_run = FALSE;
 			g_is_proc_run = FALSE;
@@ -526,6 +526,8 @@ IN BOOLEAN  Create
 NTSTATUS sw_init_minifliter(PDRIVER_OBJECT DriverObject)
 {
 	NTSTATUS status = STATUS_UNSUCCESSFUL;
+
+	PAGED_CODE();
 	
 	status = PsSetCreateProcessNotifyRoutine(CreateProcessNotifyRoutine, FALSE);
 	if (!NT_SUCCESS(status))
@@ -560,6 +562,7 @@ NTSTATUS sw_init_minifliter(PDRIVER_OBJECT DriverObject)
 
 NTSTATUS  sw_uninit_minifliter(PDRIVER_OBJECT pDriverObj)
 {
+	PAGED_CODE();
 	uninit_lpc();
 	if (g_bCreateProcessNotifyRoutine)
 	{

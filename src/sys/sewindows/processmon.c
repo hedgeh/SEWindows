@@ -162,7 +162,7 @@ VOID create_process_notity_routine( PEPROCESS Process, HANDLE ProcessId, PPS_CRE
 	}
 	else
 	{
-		if (g_currentPid == ProcessId)
+		if (g_current_pid == ProcessId)
 		{
 			g_is_file_run = FALSE;
 			g_is_proc_run = FALSE;

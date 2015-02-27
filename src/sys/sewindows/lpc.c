@@ -8,6 +8,15 @@ static PFLT_FILTER g_Filter = NULL;
 #define DELAY_ONE_MICROSECOND ( -10 )
 #define DELAY_ONE_MILLISECOND	( DELAY_ONE_MICROSECOND * 1000 )
 
+VOID 		port_disconnect( PVOID ConnectionCookie);
+NTSTATUS 	port_connect(PFLT_PORT ClientPort,PVOID ServerPortCookie, PVOID ConnectionContext, ULONG SizeOfContext,PVOID *ConnectionCookie);
+
+#ifdef ALLOC_PRAGMA
+    #pragma alloc_text(PAGE, port_connect)
+    #pragma alloc_text(PAGE, port_disconnect)
+#endif
+
+
 BOOLEAN rule_match(PHIPS_RULE_NODE hrn)
 {
 	USER_DATA		ud;

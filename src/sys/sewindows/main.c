@@ -6,13 +6,13 @@
 
 typedef NTSTATUS(*QUERY_INFO_PROCESS) (HANDLE ProcessHandle, PROCESSINFOCLASS ProcessInformationClass, PVOID ProcessInformation, ULONG ProcessInformationLength, PULONG ReturnLength);
 
-PDEVICE_OBJECT              g_DevObj = NULL;
-BOOLEAN						g_bHipsInit = FALSE;
-HANDLE						g_currentPid = NULL;
+PDEVICE_OBJECT              g_device_obj = NULL;
+BOOLEAN						g_is_driver_init = FALSE;
+HANDLE						g_current_pid = NULL;
 BOOLEAN						g_is_reg_run = FALSE;
 BOOLEAN						g_is_proc_run = FALSE;
 BOOLEAN						g_is_file_run = FALSE;
-PDRIVER_OBJECT				g_DriverObject = NULL;
+PDRIVER_OBJECT				g_driver_obj = NULL;
 WCHAR						g_device_name[MAXNAMELEN];
 WCHAR						g_symbol_name[MAXNAMELEN];
 WCHAR						g_port_name[MAXNAMELEN];
@@ -23,6 +23,30 @@ PBOOLEAN					p = &g_is_proc_run;
 WCHAR						g_white_process[6][MAXPATHLEN];
 WCHAR						g_windows_directory[MAXPATHLEN];
 QUERY_INFO_PROCESS			g_ZwQueryInformationProcess = NULL;
+
+DRIVER_INITIALIZE 	DriverEntry;
+DRIVER_DISPATCH 	dispatch_pass;
+DRIVER_UNLOAD 		driver_unload;
+DRIVER_DISPATCH 	dispatch_create;
+DRIVER_DISPATCH 	dispatch_close;
+DRIVER_DISPATCH 	dispatch_ictl;
+DRIVER_DISPATCH 	dispatch_shutdown;
+
+
+NTSTATUS 	DriverEntry (PDRIVER_OBJECT DriverObject,PUNICODE_STRING RegistryPath);
+VOID 		driver_unload(PDRIVER_OBJECT DriverObject);
+NTSTATUS 	dispatch_create(IN PDEVICE_OBJECT pDevObj, IN PIRP pIrp);
+NTSTATUS 	dispatch_close(IN PDEVICE_OBJECT pDevObj, IN PIRP pIrp);
+NTSTATUS 	dispatch_ictl(IN PDEVICE_OBJECT pDevObj, IN PIRP pIrp);
+
+#ifdef ALLOC_PRAGMA
+#pragma alloc_text(INIT, DriverEntry)
+#pragma alloc_text(PAGE, driver_unload)
+#pragma alloc_text(PAGE, get_proc_name_by_pid)
+#pragma alloc_text(PAGE, dispatch_create)
+#pragma alloc_text(PAGE, dispatch_close)
+#pragma alloc_text(PAGE, dispatch_ictl)
+#endif
 
 
 void build_white_process_list()
@@ -88,32 +112,20 @@ PWCHAR get_proc_name_by_pid(IN  HANDLE   dwProcessId, PWCHAR pPath)
 	return pPath;
 }
 
-DRIVER_INITIALIZE DriverEntry;
-DRIVER_UNLOAD   PtDeviceUnload;
-NTSTATUS
-DriverEntry (
-     PDRIVER_OBJECT DriverObject,
-     PUNICODE_STRING RegistryPath
-    );
-
-#ifdef ALLOC_PRAGMA
-#pragma alloc_text(INIT, DriverEntry)
-#endif
-
 
 NTSTATUS dispatch_create(IN PDEVICE_OBJECT pDevObj, IN PIRP pIrp)
 {
 	NTSTATUS status = STATUS_SUCCESS;
 	static BOOLEAN bFirst = TRUE;
 	PAGED_CODE();
-	if (!g_bHipsInit)
+	if (!g_is_driver_init)
 	{
 		status = STATUS_UNSUCCESSFUL;
 	}
 
 	if (bFirst)
 	{
-		g_currentPid = PsGetCurrentProcessId();
+		g_current_pid = PsGetCurrentProcessId();
 		bFirst = FALSE;
 	}
 	pIrp->IoStatus.Status = status;
@@ -144,7 +156,7 @@ NTSTATUS dispatch_ictl(IN PDEVICE_OBJECT pDevObj, IN PIRP pIrp)
 
 	PAGED_CODE();
 
-	if (g_currentPid != PsGetCurrentProcessId())
+	if (g_current_pid != PsGetCurrentProcessId())
 	{
 		goto retLable;
 	}
@@ -218,7 +230,7 @@ retLable:
 	return status;
 }
 
-NTSTATUS irp_shutdown(PDEVICE_OBJECT DeviceObject, PIRP Irp)
+NTSTATUS dispatch_shutdown(PDEVICE_OBJECT DeviceObject, PIRP Irp)
 {
 	UNICODE_STRING deviceDosName;
 
@@ -226,48 +238,48 @@ NTSTATUS irp_shutdown(PDEVICE_OBJECT DeviceObject, PIRP Irp)
 	g_is_proc_run = FALSE;
 	g_is_reg_run = FALSE;
 
-	sw_register_uninit(g_DriverObject);
+	sw_register_uninit(g_driver_obj);
 #if (NTDDI_VERSION >= NTDDI_VISTA)
-	sw_uninit_procss(g_DriverObject);
+	sw_uninit_procss(g_driver_obj);
 #endif
-	sw_uninit_minifliter(g_DriverObject);
+	sw_uninit_minifliter(g_driver_obj);
 
-	if (g_DevObj)
+	if (g_device_obj)
 	{
-		IoUnregisterShutdownNotification(g_DevObj);
-		IoDeleteDevice(g_DevObj);
-		g_DevObj = NULL;
+		IoUnregisterShutdownNotification(g_device_obj);
+		IoDeleteDevice(g_device_obj);
+		g_device_obj = NULL;
 	}
 	RtlInitUnicodeString(&deviceDosName, g_symbol_name);
 	IoDeleteSymbolicLink(&deviceDosName);
 	return STATUS_SUCCESS;
 }
 
-VOID DriverUnload(PDRIVER_OBJECT DriverObject)
+VOID driver_unload(PDRIVER_OBJECT DriverObject)
 {
 	UNICODE_STRING deviceDosName;
-
+	PAGED_CODE();
 	g_is_file_run = FALSE;
 	g_is_proc_run = FALSE;
 	g_is_reg_run = FALSE;
 
-	sw_register_uninit(g_DriverObject);
+	sw_register_uninit(g_driver_obj);
 #if (NTDDI_VERSION >= NTDDI_VISTA)
-	sw_uninit_procss(g_DriverObject);
+	sw_uninit_procss(g_driver_obj);
 #endif
-	sw_uninit_minifliter(g_DriverObject);
+	sw_uninit_minifliter(g_driver_obj);
 
-	if (g_DevObj)
+	if (g_device_obj)
 	{
-		IoUnregisterShutdownNotification(g_DevObj);
-		IoDeleteDevice(g_DevObj);
-		g_DevObj = NULL;
+		IoUnregisterShutdownNotification(g_device_obj);
+		IoDeleteDevice(g_device_obj);
+		g_device_obj = NULL;
 	}
 	RtlInitUnicodeString(&deviceDosName, g_symbol_name);
 	IoDeleteSymbolicLink(&deviceDosName);
 }
 
-NTSTATUS irp_pass(PDEVICE_OBJECT DeviceObject, PIRP Irp)
+NTSTATUS dispatch_pass(PDEVICE_OBJECT DeviceObject, PIRP Irp)
 {
 	Irp->IoStatus.Information = 0;
 	Irp->IoStatus.Status = STATUS_SUCCESS;
@@ -354,7 +366,7 @@ DriverEntry (
 		}
 	}
 	
-	g_DriverObject = DriverObject;
+	g_driver_obj = DriverObject;
 	if (!load_global_config(RegistryPath))
 	{
 		return status;
@@ -362,13 +374,13 @@ DriverEntry (
 
 	for (; nIndex < IRP_MJ_MAXIMUM_FUNCTION; ++nIndex)
 	{
-		DriverObject->MajorFunction[nIndex] = irp_pass;
+		DriverObject->MajorFunction[nIndex] = dispatch_pass;
 	}
-	DriverObject->DriverUnload = DriverUnload;
+	DriverObject->DriverUnload = driver_unload;
 	DriverObject->MajorFunction[IRP_MJ_CREATE] = dispatch_create;
 	DriverObject->MajorFunction[IRP_MJ_CLOSE] = dispatch_close;
 	DriverObject->MajorFunction[IRP_MJ_DEVICE_CONTROL] = dispatch_ictl;
-	DriverObject->MajorFunction[IRP_MJ_SHUTDOWN] = irp_shutdown;
+	DriverObject->MajorFunction[IRP_MJ_SHUTDOWN] = dispatch_shutdown;
 
 
 	RtlInitUnicodeString(&deviceName, g_device_name);
@@ -378,14 +390,14 @@ DriverEntry (
 		FILE_DEVICE_NETWORK,
 		0,
 		FALSE,
-		&g_DevObj);
+		&g_device_obj);
 	if (!NT_SUCCESS(status))
 	{
 		goto err_ret;
 	}
 	bNeedToDelDevice = TRUE;
 
-	status = IoRegisterShutdownNotification(g_DevObj);
+	status = IoRegisterShutdownNotification(g_device_obj);
 	if (!NT_SUCCESS(status))
 	{
 		goto err_ret;
@@ -422,7 +434,7 @@ DriverEntry (
 		goto err_ret;
 	}
 	bNeedToUninitRegmon = TRUE;
-	g_bHipsInit = TRUE;
+	g_is_driver_init = TRUE;
     return status;
 err_ret:
 	g_is_reg_run = FALSE;
@@ -431,7 +443,7 @@ err_ret:
 
 	if (bNeedToUnregShutdown)
 	{
-		IoUnregisterShutdownNotification(g_DevObj);
+		IoUnregisterShutdownNotification(g_device_obj);
 	}
 
 	if (bNeedToDelSym)
@@ -442,8 +454,8 @@ err_ret:
 
 	if (bNeedToDelDevice)
 	{
-		IoDeleteDevice(g_DevObj);
-		g_DevObj = NULL;
+		IoDeleteDevice(g_device_obj);
+		g_device_obj = NULL;
 	}
 
 	if (bNeedToUninitRegmon)
