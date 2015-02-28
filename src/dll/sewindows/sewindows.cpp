@@ -264,7 +264,7 @@ BOOLEAN notify_callback_func(Param& op)
 				if (g_sewin_operation.file_rename)
 				{
 					get_proc_info_by_pid(prule_node->sub_pid, user_name,proc_path);
-					return g_sewin_operation.file_rename(user_name, proc_path, trans_file_path(prule_node->des_path).GetBuffer(), prule_node->new_name);
+					return g_sewin_operation.file_rename(user_name, proc_path, trans_file_path(prule_node->des_path).GetBuffer(), trans_file_path(prule_node->new_name).GetBuffer());
 				}
 				break;
 			case FILE_CREATE_XX:

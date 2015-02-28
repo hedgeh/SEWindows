@@ -94,7 +94,7 @@ BOOLEAN CCommunicateDriv::UninsDriver(TCHAR* lpsz_service_name)
 
 BOOLEAN	CCommunicateDriv::TransferSysroot(TCHAR* lpsz_sysroot)
 {
-	return m_pScmDrvCtrl->IoControl(IOCTL_TRANSFER_SYSROOT, lpsz_sysroot, _tcslen(lpsz_sysroot)*sizeof(TCHAR), NULL, 0, NULL);
+	return m_pScmDrvCtrl->IoControl(IOCTL_TRANSFER_SYSROOT, lpsz_sysroot, (DWORD)_tcslen(lpsz_sysroot)*sizeof(TCHAR), NULL, 0, NULL);
 }
 
 BOOLEAN CCommunicateDriv::InitDriver(TCHAR* lpsz_service_name, TCHAR* lpsz_path, TCHAR* lpsz_altitude, TCHAR* lpsz_portname, TCHAR* lpszLink_name)

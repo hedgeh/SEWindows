@@ -120,6 +120,11 @@ PWCHAR mywcsistr(PWCHAR s1, PWCHAR s2)
 		return STATUS_SUCCESS;
 	}
 
+	if (ExGetPreviousMode() == KernelMode)
+	{
+		return STATUS_SUCCESS;
+	}
+
 	if ((PsGetCurrentProcessId() == (HANDLE)0) || g_current_pid == PsGetCurrentProcessId())
 	{
 		return STATUS_SUCCESS;

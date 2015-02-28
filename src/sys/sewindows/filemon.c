@@ -53,6 +53,7 @@ FORCEINLINE BOOLEAN  is_dir(PWCHAR pPath)
 	return pPath[wcslen(pPath) - 1] == L'\\';
 }
 
+
 NTSTATUS sw_unload(FLT_FILTER_UNLOAD_FLAGS Flags)
 {
 	UNICODE_STRING deviceDosName;
@@ -84,6 +85,22 @@ NTSTATUS sw_unload(FLT_FILTER_UNLOAD_FLAGS Flags)
 }
 
 
+FORCEINLINE BOOLEAN  is_file_exist(PUNICODE_STRING pPath)
+{
+	BOOLEAN					bret = FALSE;
+	NTSTATUS				status = STATUS_SUCCESS;
+	OBJECT_ATTRIBUTES		attributes;
+	FILE_NETWORK_OPEN_INFORMATION  FileInformation;
+
+	InitializeObjectAttributes(&attributes, pPath, OBJ_CASE_INSENSITIVE | OBJ_KERNEL_HANDLE, NULL, NULL);
+
+	status = ZwQueryFullAttributesFile(&attributes, &FileInformation);
+	if (NT_SUCCESS(status))
+	{
+		bret = TRUE;
+	}
+	return bret;
+}
 
 FLT_PREOP_CALLBACK_STATUS sw_pre_create_callback( PFLT_CALLBACK_DATA Data,PCFLT_RELATED_OBJECTS FltObjects, PVOID *CompletionContext)
 {
@@ -91,15 +108,20 @@ FLT_PREOP_CALLBACK_STATUS sw_pre_create_callback( PFLT_CALLBACK_DATA Data,PCFLT_
 	PHIPS_RULE_NODE cinf = NULL;
 	BOOLEAN			IsDirectory = FALSE;
 	PFLT_FILE_NAME_INFORMATION	nameInfo = NULL;
-	WCHAR						tmpPath[MAXPATHLEN] = { 0 };
+	
 	ACCESS_MASK		OriginalDesiredAccess;
 	ULONG           create_options = Data->Iopb->Parameters.Create.Options & 0x00ffffff;
-
+	UCHAR			create_disposition = (UCHAR)(((Data->Iopb->Parameters.Create.Options) >> 24) & 0xFF);
 	
 	UNREFERENCED_PARAMETER(FltObjects);
 	UNREFERENCED_PARAMETER(CompletionContext);
 
 	PAGED_CODE();
+
+	if (ExGetPreviousMode() == KernelMode)
+	{
+		return FLT_PREOP_SUCCESS_NO_CALLBACK;
+	}
 
 	if ((PsGetCurrentProcessId() == (HANDLE)4) || (PsGetCurrentProcessId() == (HANDLE)0) ||g_is_file_run == FALSE)
 	{
@@ -160,7 +182,7 @@ FLT_PREOP_CALLBACK_STATUS sw_pre_create_callback( PFLT_CALLBACK_DATA Data,PCFLT_
 	status = FltIsDirectory(FltObjects->FileObject, FltObjects->Instance, &IsDirectory);
 	if (!NT_SUCCESS(status))
 	{
-		if (is_dir(tmpPath))
+		if (is_dir(cinf->des_path))
 		{
 			IsDirectory = TRUE;
 		}
@@ -174,7 +196,7 @@ FLT_PREOP_CALLBACK_STATUS sw_pre_create_callback( PFLT_CALLBACK_DATA Data,PCFLT_
 	}
 	cinf->isDir = IsDirectory;
 
-	if (wcslen(cinf->des_path) <= 3)
+	if (wcslen(cinf->des_path) <= wcslen(L"\\Device\\HarddiskVolume1\\"))
 	{
 		goto err_ret;
 	}
@@ -188,11 +210,11 @@ FLT_PREOP_CALLBACK_STATUS sw_pre_create_callback( PFLT_CALLBACK_DATA Data,PCFLT_
 			Data->Iopb->Parameters.Create.SecurityContext->AccessState->RemainingDesiredAccess &= ~FILE_EXECUTE;
 			Data->Iopb->Parameters.Create.SecurityContext->DesiredAccess &= ~FILE_EXECUTE;
 
-			FltReleaseFileNameInformation(nameInfo);
+			/*FltReleaseFileNameInformation(nameInfo);
 			ExFreeToPagedLookasideList(&g_file_lookaside_list, cinf);
 			Data->IoStatus.Status = STATUS_ACCESS_DENIED;
 			Data->IoStatus.Information = 0;
-			return FLT_PREOP_COMPLETE;
+			return FLT_PREOP_COMPLETE;*/
 		}
 	}
 
@@ -220,6 +242,21 @@ FLT_PREOP_CALLBACK_STATUS sw_pre_create_callback( PFLT_CALLBACK_DATA Data,PCFLT_
 			Data->Iopb->Parameters.Create.SecurityContext->AccessState->OriginalDesiredAccess &= ~FILE_APPEND_DATA;
 			Data->Iopb->Parameters.Create.SecurityContext->AccessState->RemainingDesiredAccess &= ~FILE_APPEND_DATA;
 			Data->Iopb->Parameters.Create.SecurityContext->DesiredAccess &= ~FILE_APPEND_DATA;
+		}
+	}
+	
+	if ((create_disposition == FILE_OVERWRITE || create_disposition == FILE_OVERWRITE_IF) && 
+		FALSE == IsDirectory && 
+		is_file_exist(&nameInfo->Name))
+	{
+		cinf->minor_type = FILE_WRITE_DATA_XX;
+		if (rule_match(cinf) != TRUE)
+		{
+			FltReleaseFileNameInformation(nameInfo);
+			ExFreeToPagedLookasideList(&g_file_lookaside_list, cinf);
+			Data->IoStatus.Status = STATUS_ACCESS_DENIED;
+			Data->IoStatus.Information = 0;
+			return FLT_PREOP_COMPLETE;
 		}
 	}
 
@@ -255,6 +292,12 @@ FLT_POSTOP_CALLBACK_STATUS sw_post_create_callback( PFLT_CALLBACK_DATA Data, PCF
 	WCHAR							tmpPath[MAXPATHLEN] = { 0 };
 	FILE_DISPOSITION_INFORMATION	fdi;
 	PAGED_CODE();
+
+	if (ExGetPreviousMode() == KernelMode)
+	{
+		return FLT_POSTOP_FINISHED_PROCESSING;
+	}
+
 	if ((PsGetCurrentProcessId() == (HANDLE)4) || (PsGetCurrentProcessId() == (HANDLE)0) || g_is_file_run == FALSE)
 	{
 		return FLT_POSTOP_FINISHED_PROCESSING;
@@ -274,7 +317,7 @@ FLT_POSTOP_CALLBACK_STATUS sw_post_create_callback( PFLT_CALLBACK_DATA Data, PCF
 	{
 		return FLT_POSTOP_FINISHED_PROCESSING;
 	}
-	if (FILE_CREATED == Data->IoStatus.Information || FILE_OVERWRITTEN == Data->IoStatus.Information)
+	if (FILE_CREATED == Data->IoStatus.Information /*|| FILE_OVERWRITTEN == Data->IoStatus.Information*/)
 	{
 		if (FlagOn(FltObjects->FileObject->Flags, FO_HANDLE_CREATED))
 		{
@@ -368,6 +411,12 @@ FLT_PREOP_CALLBACK_STATUS sw_pre_setinfo_callback( PFLT_CALLBACK_DATA Data, PCFL
 	WCHAR						tmpPath[MAXPATHLEN] = { 0 };
 
 	PAGED_CODE();
+
+	if (ExGetPreviousMode() == KernelMode)
+	{
+		return FLT_PREOP_SUCCESS_NO_CALLBACK;
+	}
+
 	if ((PsGetCurrentProcessId() == (HANDLE)4) || (PsGetCurrentProcessId() == (HANDLE)0) || g_is_file_run == FALSE)
 	{
 		return FLT_PREOP_SUCCESS_NO_CALLBACK;
