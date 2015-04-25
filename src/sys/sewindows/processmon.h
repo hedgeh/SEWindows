@@ -9,6 +9,8 @@
 #define  OP_PROC_SUSPEND_RESUME				7  // 挂起进程
 #define  OP_THREAD_KILL						8  // 杀死线程
 #define  OP_THREAD_SUSPEND_RESUME			9  // 恢复线程
+#define  OP_THREAD_GET_CONTEXT				10  // 获取CONTEXT
+#define  OP_THREAD_SET_CONTEXT				11  // 设置CONTEXT
 
 
 
@@ -41,9 +43,11 @@
 #define THREAD_QUERY_LIMITED_INFORMATION (0x0800)  // winnt
 #define THREAD_RESUME                    (0x1000)  // winnt
 
-#if (NTDDI_VERSION >= NTDDI_VISTA)
-OB_PREOP_CALLBACK_STATUS pre_procopration_callback( PVOID RegistrationContext, POB_PRE_OPERATION_INFORMATION pOperationInformation);
 NTSTATUS sw_init_procss(PDRIVER_OBJECT pDriverObj);
 NTSTATUS sw_uninit_procss(PDRIVER_OBJECT pDriverObj);
+
+#if (NTDDI_VERSION >= NTDDI_VISTA)
+OB_PREOP_CALLBACK_STATUS pre_procopration_callback( PVOID RegistrationContext, POB_PRE_OPERATION_INFORMATION pOperationInformation);
 VOID create_process_notity_routine( PEPROCESS Process, HANDLE ProcessId, PPS_CREATE_NOTIFY_INFO CreateInfo);
 #endif
+

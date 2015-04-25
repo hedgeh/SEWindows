@@ -3,8 +3,9 @@
 #include "processmon.h"
 #include "regmon.h"
 #include <Strsafe.h>
-
+//ZwQuerySystemInformation
 typedef NTSTATUS(*QUERY_INFO_PROCESS) (HANDLE ProcessHandle, PROCESSINFOCLASS ProcessInformationClass, PVOID ProcessInformation, ULONG ProcessInformationLength, PULONG ReturnLength);
+//typedef NTSTATUS(*QUERY_SYSTEM_INFO) (HANDLE ProcessHandle, PROCESSINFOCLASS ProcessInformationClass, PVOID ProcessInformation, ULONG ProcessInformationLength, PULONG ReturnLength);
 
 PDEVICE_OBJECT              g_device_obj = NULL;
 BOOLEAN						g_is_driver_init = FALSE;
@@ -239,9 +240,9 @@ NTSTATUS dispatch_shutdown(PDEVICE_OBJECT DeviceObject, PIRP Irp)
 	g_is_reg_run = FALSE;
 
 	sw_register_uninit(g_driver_obj);
-#if (NTDDI_VERSION >= NTDDI_VISTA)
+//#if (NTDDI_VERSION >= NTDDI_VISTA)
 	sw_uninit_procss(g_driver_obj);
-#endif
+//#endif
 	sw_uninit_minifliter(g_driver_obj);
 
 	if (g_device_obj)
@@ -264,9 +265,9 @@ VOID driver_unload(PDRIVER_OBJECT DriverObject)
 	g_is_reg_run = FALSE;
 
 	sw_register_uninit(g_driver_obj);
-#if (NTDDI_VERSION >= NTDDI_VISTA)
+//#if (NTDDI_VERSION >= NTDDI_VISTA)
 	sw_uninit_procss(g_driver_obj);
-#endif
+//#endif
 	sw_uninit_minifliter(g_driver_obj);
 
 	if (g_device_obj)
@@ -420,14 +421,14 @@ DriverEntry (
 		goto err_ret;
 	}
 	bNeedToUninitMinifilter = TRUE;
-#if (NTDDI_VERSION >= NTDDI_VISTA)
+//#if (NTDDI_VERSION >= NTDDI_VISTA)
 	status = sw_init_procss(DriverObject);
 	if (!NT_SUCCESS(status))
 	{
 		goto err_ret;
 	}
 	bNeedToUninitProcmon = TRUE;
-#endif
+//#endif
 	status = sw_register_init(DriverObject);
 	if (!NT_SUCCESS(status))
 	{

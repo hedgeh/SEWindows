@@ -15,14 +15,6 @@ static BOOLEAN g_is_file_lookaside_list_installed = FALSE;
 static BOOLEAN g_bCreateProcessNotifyRoutine = FALSE;
 
 
-NTSTATUS
-sw_InstanceSetup (
-	__in PCFLT_RELATED_OBJECTS FltObjects,
-	__in FLT_INSTANCE_SETUP_FLAGS Flags,
-	__in DEVICE_TYPE VolumeDeviceType,
-	__in FLT_FILESYSTEM_TYPE VolumeFilesystemType
-	);
-
 CONST FLT_OPERATION_REGISTRATION g_callbacks[] = 
 {
 	{ IRP_MJ_CREATE,
@@ -53,7 +45,6 @@ CONST FLT_REGISTRATION g_FilterRegistration = {
 	NULL,                               //  GenerateFileName
 	NULL,                               //  GenerateDestinationFileName
 	NULL                                //  NormalizeNameComponent
-
 };
 
 
