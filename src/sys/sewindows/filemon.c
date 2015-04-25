@@ -14,16 +14,25 @@ static PAGED_LOOKASIDE_LIST g_file_lookaside_list;
 static BOOLEAN g_is_file_lookaside_list_installed = FALSE;
 static BOOLEAN g_bCreateProcessNotifyRoutine = FALSE;
 
+
+NTSTATUS
+sw_InstanceSetup (
+	__in PCFLT_RELATED_OBJECTS FltObjects,
+	__in FLT_INSTANCE_SETUP_FLAGS Flags,
+	__in DEVICE_TYPE VolumeDeviceType,
+	__in FLT_FILESYSTEM_TYPE VolumeFilesystemType
+	);
+
 CONST FLT_OPERATION_REGISTRATION g_callbacks[] = 
 {
 	{ IRP_MJ_CREATE,
 	FLTFL_OPERATION_REGISTRATION_SKIP_PAGING_IO | FLTFL_OPERATION_REGISTRATION_SKIP_CACHED_IO,
-	sw_pre_create_callback,
-	sw_post_create_callback},
+	(PFLT_PRE_OPERATION_CALLBACK)sw_pre_create_callback,
+	(PFLT_POST_OPERATION_CALLBACK)sw_post_create_callback},
 
 	{ IRP_MJ_SET_INFORMATION,
 	FLTFL_OPERATION_REGISTRATION_SKIP_PAGING_IO | FLTFL_OPERATION_REGISTRATION_SKIP_CACHED_IO,
-	sw_pre_setinfo_callback,
+	(PFLT_PRE_OPERATION_CALLBACK)sw_pre_setinfo_callback,
 	NULL},
 	{ IRP_MJ_OPERATION_END }
 };
@@ -36,8 +45,8 @@ CONST FLT_REGISTRATION g_FilterRegistration = {
 	0,                                  //  Flags
 	NULL,                               //  Context
 	g_callbacks,                        //  Operation g_callbacks
-	sw_unload,                          //  MiniFilterUnload
-	NULL,								//  InstanceSetup
+	(PFLT_FILTER_UNLOAD_CALLBACK)sw_unload,                          //  MiniFilterUnload
+	(PFLT_INSTANCE_SETUP_CALLBACK)sw_InstanceSetup,					//  InstanceSetup
 	NULL,								//  InstanceQueryTeardown
 	NULL,								//  InstanceTeardownStart
 	NULL,								//  InstanceTeardownComplete
@@ -51,6 +60,23 @@ CONST FLT_REGISTRATION g_FilterRegistration = {
 FORCEINLINE BOOLEAN  is_dir(PWCHAR pPath) 
 {
 	return pPath[wcslen(pPath) - 1] == L'\\';
+}
+
+NTSTATUS
+sw_InstanceSetup (
+	__in PCFLT_RELATED_OBJECTS FltObjects,
+	__in FLT_INSTANCE_SETUP_FLAGS Flags,
+	__in DEVICE_TYPE VolumeDeviceType,
+	__in FLT_FILESYSTEM_TYPE VolumeFilesystemType
+	)
+{
+	PAGED_CODE();
+
+	if (FLT_FSTYPE_RAW == VolumeFilesystemType)
+	{
+		return STATUS_FLT_DO_NOT_ATTACH;
+	}
+	return STATUS_SUCCESS;
 }
 
 
@@ -118,7 +144,7 @@ FLT_PREOP_CALLBACK_STATUS sw_pre_create_callback( PFLT_CALLBACK_DATA Data,PCFLT_
 
 	PAGED_CODE();
 
-	if (ExGetPreviousMode() == KernelMode)
+	if (Data->RequestorMode == KernelMode)
 	{
 		return FLT_PREOP_SUCCESS_NO_CALLBACK;
 	}
@@ -132,6 +158,12 @@ FLT_PREOP_CALLBACK_STATUS sw_pre_create_callback( PFLT_CALLBACK_DATA Data,PCFLT_
 		return FLT_PREOP_SUCCESS_NO_CALLBACK;
 	}
 
+	if (!FltObjects || !FltObjects->Instance || !FltObjects->FileObject)
+	{
+		return FLT_PREOP_SUCCESS_NO_CALLBACK;
+	}
+
+
 	if (FlagOn(Data->Iopb->TargetFileObject->Flags, FO_VOLUME_OPEN) || FlagOn(Data->Iopb->TargetFileObject->Flags, FO_NAMED_PIPE) || FlagOn(Data->Iopb->TargetFileObject->Flags, FO_MAILSLOT))
 	{
 		return FLT_PREOP_SUCCESS_NO_CALLBACK;
@@ -143,6 +175,11 @@ FLT_PREOP_CALLBACK_STATUS sw_pre_create_callback( PFLT_CALLBACK_DATA Data,PCFLT_
 	}
 
 	if (FlagOn(Data->Iopb->OperationFlags, SL_OPEN_PAGING_FILE))
+	{
+		return FLT_PREOP_SUCCESS_NO_CALLBACK;
+	}
+
+	if (FlagOn( FltObjects->FileObject->Flags, FO_NAMED_PIPE ) || FlagOn( FltObjects->FileObject->Flags, FO_MAILSLOT ))
 	{
 		return FLT_PREOP_SUCCESS_NO_CALLBACK;
 	}
@@ -179,21 +216,18 @@ FLT_PREOP_CALLBACK_STATUS sw_pre_create_callback( PFLT_CALLBACK_DATA Data,PCFLT_
 	}
 	StringCbCopyNW(cinf->des_path,sizeof(WCHAR)*MAXPATHLEN,nameInfo->Name.Buffer, nameInfo->Name.Length);
 
-	status = FltIsDirectory(FltObjects->FileObject, FltObjects->Instance, &IsDirectory);
-	if (!NT_SUCCESS(status))
+	if (is_dir(cinf->des_path))
 	{
-		if (is_dir(cinf->des_path))
+		IsDirectory = TRUE;
+	}
+	else
+	{
+		if (create_options & FILE_DIRECTORY_FILE)
 		{
 			IsDirectory = TRUE;
 		}
-		else
-		{
-			if (create_options & FILE_DIRECTORY_FILE)
-			{
-				IsDirectory = TRUE;
-			}
-		}
 	}
+	
 	cinf->isDir = IsDirectory;
 
 	if (wcslen(cinf->des_path) <= wcslen(L"\\Device\\HarddiskVolume1\\"))
@@ -209,12 +243,6 @@ FLT_PREOP_CALLBACK_STATUS sw_pre_create_callback( PFLT_CALLBACK_DATA Data,PCFLT_
 			Data->Iopb->Parameters.Create.SecurityContext->AccessState->OriginalDesiredAccess &= ~FILE_EXECUTE;
 			Data->Iopb->Parameters.Create.SecurityContext->AccessState->RemainingDesiredAccess &= ~FILE_EXECUTE;
 			Data->Iopb->Parameters.Create.SecurityContext->DesiredAccess &= ~FILE_EXECUTE;
-
-			/*FltReleaseFileNameInformation(nameInfo);
-			ExFreeToPagedLookasideList(&g_file_lookaside_list, cinf);
-			Data->IoStatus.Status = STATUS_ACCESS_DENIED;
-			Data->IoStatus.Information = 0;
-			return FLT_PREOP_COMPLETE;*/
 		}
 	}
 
@@ -291,27 +319,40 @@ FLT_POSTOP_CALLBACK_STATUS sw_post_create_callback( PFLT_CALLBACK_DATA Data, PCF
 	PFLT_FILE_NAME_INFORMATION		nameInfo = NULL;
 	WCHAR							tmpPath[MAXPATHLEN] = { 0 };
 	FILE_DISPOSITION_INFORMATION	fdi;
+	PIRP							pTopLevelIrp = NULL;
+
 	PAGED_CODE();
 
-	if (ExGetPreviousMode() == KernelMode)
-	{
-		return FLT_POSTOP_FINISHED_PROCESSING;
-	}
-
-	if ((PsGetCurrentProcessId() == (HANDLE)4) || (PsGetCurrentProcessId() == (HANDLE)0) || g_is_file_run == FALSE)
-	{
-		return FLT_POSTOP_FINISHED_PROCESSING;
-	}
 	if (KeGetCurrentIrql() >= DISPATCH_LEVEL)
 	{
 		return FLT_POSTOP_FINISHED_PROCESSING;
 	}
-
-	if (!NT_SUCCESS(Data->IoStatus.Status) || (STATUS_REPARSE == Data->IoStatus.Status))
+	
+	if (FLTFL_POST_OPERATION_DRAINING & Flags)
 	{
 		return FLT_POSTOP_FINISHED_PROCESSING;
 	}
 
+	if (!FltObjects->Instance)
+	{
+		return FLT_POSTOP_FINISHED_PROCESSING;
+	}
+
+	if (!FltObjects->FileObject)
+	{
+		return FLT_POSTOP_FINISHED_PROCESSING;
+	}
+
+	if (FlagOn( FltObjects->FileObject->Flags, FO_NAMED_PIPE ))
+	{
+		return FLT_POSTOP_FINISHED_PROCESSING;
+	}
+		
+	pTopLevelIrp = IoGetTopLevelIrp();
+	if (pTopLevelIrp)
+	{
+		return FLT_POSTOP_FINISHED_PROCESSING;
+	}
 	
 	if (!NT_SUCCESS(Data->IoStatus.Status) || (STATUS_REPARSE == Data->IoStatus.Status))
 	{
