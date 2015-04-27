@@ -114,6 +114,15 @@ OB_PREOP_CALLBACK_STATUS pre_procopration_callback( PVOID RegistrationContext, P
 				*DesiredAccess &= ~PROCESS_SUSPEND_RESUME;
 			}
 		}
+
+		if ((OriginalDesiredAccess & PROCESS_DUP_HANDLE) == PROCESS_DUP_HANDLE)
+		{	
+			Pi.minor_type = OP_PROC_DUPHANDLE;
+			if (rule_match(&Pi) == FALSE)
+			{
+				*DesiredAccess &= ~PROCESS_DUP_HANDLE;
+			}
+		}
 	}
 	else
 	{
@@ -376,16 +385,18 @@ ZwQuerySystemInformation(
 );
 
 
-NTSTATUS (__stdcall *klNtOpenProcess) (
+NTSTATUS (__stdcall *real_NtOpenProcess) (
 									   __out PHANDLE ProcessHandle,
 									   __in ACCESS_MASK DesiredAccess,
 									   __in POBJECT_ATTRIBUTES ObjectAttributes,
 									   __in_opt PCLIENT_ID ClientId
 									   );
 
+static ULONG g_NtOpenProcess_index = MAXULONG;
+
 NTSTATUS
 __stdcall
-klhOpenProcess (
+fake_OpenProcess (
 				__out PHANDLE ProcessHandle,
 				__in ACCESS_MASK DesiredAccess,
 				__in POBJECT_ATTRIBUTES ObjectAttributes,
@@ -393,27 +404,107 @@ klhOpenProcess (
 				)
 {
 	NTSTATUS status;
-	status = klNtOpenProcess( ProcessHandle, DesiredAccess, ObjectAttributes, ClientId );
-	return status;
+
+	HIPS_RULE_NODE	Pi;
+	HANDLE			target_pid = NULL;
+
+	if (ExGetPreviousMode() == KernelMode || 
+		KeGetCurrentIrql() >= DISPATCH_LEVEL || 
+		g_is_proc_run == FALSE ||
+		PsGetCurrentProcessId() == (HANDLE)4 || 
+		PsGetCurrentProcessId() == (HANDLE)0 ||
+		ClientId == NULL)
+	{
+		return real_NtOpenProcess( ProcessHandle, DesiredAccess, ObjectAttributes, ClientId );
+	}
+
+	RtlZeroMemory(&Pi, sizeof(HIPS_RULE_NODE));
+	Pi.major_type = PROC_OP;
+	Pi.sub_pid = PsGetCurrentProcessId();		
+	Pi.obj_pid = ClientId->UniqueProcess;		
+
+	
+	if ((DesiredAccess & PROCESS_TERMINATE) == PROCESS_TERMINATE)
+	{
+		//	杀死进程
+		Pi.minor_type = OP_PROC_KILL;
+		if (rule_match(&Pi) == FALSE)
+		{
+			DesiredAccess &= ~PROCESS_TERMINATE;
+		}
+	}
+	if ((DesiredAccess & PROCESS_CREATE_THREAD) == PROCESS_CREATE_THREAD)
+	{	//	远程线程创建
+		Pi.minor_type = OP_PROC_CREATE_REMOTE_THREAD;
+		if (rule_match(&Pi) == FALSE)
+		{
+			DesiredAccess &= ~PROCESS_CREATE_THREAD;
+		}
+	}
+	if ((DesiredAccess & PROCESS_VM_OPERATION) == PROCESS_VM_OPERATION)
+	{	//	修改内存属性
+		Pi.minor_type = OP_PROC_CHANGE_VM;
+		if (rule_match(&Pi) == FALSE)
+		{
+			DesiredAccess &= ~PROCESS_VM_OPERATION;
+		}
+	}
+	if ((DesiredAccess & PROCESS_VM_READ) == PROCESS_VM_READ)
+	{	//	读内存
+		Pi.minor_type = OP_PROC_READ_PROCESS;
+		if (rule_match(&Pi) == FALSE)
+		{
+			DesiredAccess &= ~PROCESS_VM_READ;
+		}
+	}
+	if ((DesiredAccess & PROCESS_VM_WRITE) == PROCESS_VM_WRITE)
+	{	//	写内存
+		Pi.minor_type = OP_PROC_WRITE_PROCESS;
+		if (rule_match(&Pi) == FALSE)
+		{
+			DesiredAccess &= ~PROCESS_VM_WRITE;
+		}
+	}
+	if ((DesiredAccess & PROCESS_SUSPEND_RESUME) == PROCESS_SUSPEND_RESUME)
+	{	
+		Pi.minor_type = OP_PROC_SUSPEND_RESUME;
+		if (rule_match(&Pi) == FALSE)
+		{
+			DesiredAccess &= ~PROCESS_SUSPEND_RESUME;
+		}
+	}
+
+	if ((DesiredAccess & PROCESS_DUP_HANDLE) == PROCESS_DUP_HANDLE)
+	{	
+		Pi.minor_type = OP_PROC_DUPHANDLE;
+		if (rule_match(&Pi) == FALSE)
+		{
+			DesiredAccess &= ~PROCESS_DUP_HANDLE;
+		}
+	}
+
+	return real_NtOpenProcess( ProcessHandle, DesiredAccess, ObjectAttributes, ClientId ); 
 }
 
 
 //+ ------------------------------------------------------------------------------------------
-NTSTATUS (__stdcall *klNtTerminateProcess)( 
+NTSTATUS (__stdcall *real_NtTerminateProcess)( 
 	__in HANDLE ProcessHandle,
 	__in ULONG ProcessExitCode
 	);
 
+static ULONG g_NtTerminateProcess_index = MAXULONG;
+
 NTSTATUS
 __stdcall
-klhTerminateProcess (
+fake_NtTerminateProcess (
 					 __in HANDLE ProcessHandle,
 					 __in ULONG ProcessExitCode
 					 )
 {
 	NTSTATUS status;
 	
-	status = klNtTerminateProcess( ProcessHandle, ProcessExitCode );
+	status = real_NtTerminateProcess( ProcessHandle, ProcessExitCode );
 
 	return status;
 }
@@ -597,18 +688,24 @@ GetNativeID (
 BOOLEAN
 HookNtFunc (
 	__out PULONG pInterceptedFuncAddress,
+	__out PULONG pFuncIndex,
 	__in ULONG   NewFuncAddress,
 	__in PCHAR   FuncName
 	)
 {
 	BOOLEAN bPatched = FALSE;
+	ULONG NativeID = 0;
+	if (!pInterceptedFuncAddress || !pFuncIndex)
+	{
+		return FALSE;
+	}
 
-	ULONG NativeID = GetNativeID( gBaseOfNtDllDll, FuncName );
+	NativeID = GetNativeID( gBaseOfNtDllDll, FuncName );
 
 	if (NativeID)
 	{
 		*pInterceptedFuncAddress = SYSTEMSERVICE_BY_FUNC_ID( NativeID );
-
+		*pFuncIndex = NativeID;
 		__asm
 		{
 			push	eax
@@ -634,6 +731,40 @@ HookNtFunc (
 	return bPatched;
 }
 
+
+VOID
+UnHookNtFunc (
+	__in ULONG	 FuncIndex,
+	__in ULONG   RealFuncAddress
+	)
+{
+
+	if (MAXULONG == FuncIndex || !RealFuncAddress)
+	{
+		return ;
+	}
+
+	__asm
+	{
+		push	eax
+		mov     eax, CR0
+		and     eax, 0FFFEFFFFh
+		mov     CR0, eax
+		pop     eax
+	}
+
+	SYSTEMSERVICE_BY_FUNC_ID( FuncIndex ) = RealFuncAddress;
+
+	__asm
+	{
+		push    eax
+		mov     eax, CR0
+		or      eax, NOT 0FFFEFFFFh
+		mov     CR0, eax
+		pop     eax
+	}
+}
+
 NTSTATUS sw_init_procss(PDRIVER_OBJECT pDriverObj)
 {
 	NTSTATUS					Status = STATUS_SUCCESS;
@@ -643,8 +774,8 @@ NTSTATUS sw_init_procss(PDRIVER_OBJECT pDriverObj)
 		return STATUS_UNSUCCESSFUL;
 	}
 
-	HookNtFunc( (ULONG*) &klNtOpenProcess, (ULONG) klhOpenProcess, "NtOpenProcess" );
-	HookNtFunc( (ULONG*) &klNtTerminateProcess, (ULONG) klhTerminateProcess, "NtTerminateProcess");
+	HookNtFunc( (ULONG*) &real_NtOpenProcess,&g_NtOpenProcess_index, (ULONG) fake_OpenProcess, "NtOpenProcess" );
+	HookNtFunc( (ULONG*) &real_NtTerminateProcess,&g_NtTerminateProcess_index, (ULONG) fake_NtTerminateProcess, "NtTerminateProcess");
 
 	return Status;
 }
@@ -652,6 +783,11 @@ NTSTATUS sw_init_procss(PDRIVER_OBJECT pDriverObj)
 NTSTATUS sw_uninit_procss(PDRIVER_OBJECT pDriverObj)
 {
 	NTSTATUS Status = STATUS_SUCCESS;
+
+	UnHookNtFunc(g_NtOpenProcess_index,(ULONG)real_NtOpenProcess);
+	g_NtOpenProcess_index = MAXULONG;
+	UnHookNtFunc(g_NtTerminateProcess_index,(ULONG)real_NtTerminateProcess);
+	g_NtTerminateProcess_index = MAXULONG;
 
 	return Status;
 }

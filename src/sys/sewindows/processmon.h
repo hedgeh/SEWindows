@@ -11,6 +11,7 @@
 #define  OP_THREAD_SUSPEND_RESUME			9  // 恢复线程
 #define  OP_THREAD_GET_CONTEXT				10  // 获取CONTEXT
 #define  OP_THREAD_SET_CONTEXT				11  // 设置CONTEXT
+#define  OP_PROC_DUPHANDLE				    12  // 复制句柄
 
 
 

@@ -11,7 +11,7 @@ PDEVICE_OBJECT              g_device_obj = NULL;
 BOOLEAN						g_is_driver_init = FALSE;
 HANDLE						g_current_pid = NULL;
 BOOLEAN						g_is_reg_run = FALSE;
-BOOLEAN						g_is_proc_run = FALSE;
+BOOLEAN						g_is_proc_run = TRUE;
 BOOLEAN						g_is_file_run = FALSE;
 PDRIVER_OBJECT				g_driver_obj = NULL;
 WCHAR						g_device_name[MAXNAMELEN];
@@ -463,12 +463,12 @@ err_ret:
 	{
 		sw_register_uninit(DriverObject);
 	}
-#if (NTDDI_VERSION >= NTDDI_VISTA)
+//#if (NTDDI_VERSION >= NTDDI_VISTA)
 	if (bNeedToUninitProcmon)
 	{
 		sw_uninit_procss(DriverObject);
 	}
-#endif
+//#endif
 	if (bNeedToUninitMinifilter)
 	{
 		sw_uninit_minifliter(DriverObject);

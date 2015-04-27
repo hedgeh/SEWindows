@@ -84,9 +84,9 @@ NTSTATUS sw_unload(FLT_FILTER_UNLOAD_FLAGS Flags)
 	g_is_proc_run = FALSE;
 	g_is_reg_run = FALSE;
 	sw_register_uninit(g_driver_obj);
-#if (NTDDI_VERSION >= NTDDI_VISTA)
+//#if (NTDDI_VERSION >= NTDDI_VISTA)
 	sw_uninit_procss(g_driver_obj);
-#endif
+//#endif
 	sw_uninit_minifliter(g_driver_obj);
 
 	if (g_device_obj)
