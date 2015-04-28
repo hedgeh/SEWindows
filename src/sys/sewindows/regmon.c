@@ -25,24 +25,6 @@ static BOOLEAN g_bRegistryManager = FALSE;
 static BOOLEAN g_RegisterCallback = FALSE;
 
 
-BOOLEAN is_process_in_white_list(HANDLE pid)
-{
-	WCHAR	temp_path[MAXPATHLEN];
-	int i = 0;
-	if (!get_proc_name_by_pid(pid, temp_path))
-	{
-		return FALSE;
-	}
-	for (; i < 6; i++)
-	{
-		if (_wcsicmp(temp_path, g_white_process[i]) == 0)
-		{
-			return TRUE;
-		}
-	}
-	return FALSE;
-}
-
 static BOOLEAN get_registry_name_by_obj(PUNICODE_STRING pRegistryPath, PVOID pRegistryObject)
 {
 	BOOLEAN foundCompleteName = FALSE;

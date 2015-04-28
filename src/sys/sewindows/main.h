@@ -23,6 +23,8 @@
 #define IOCTL_SET_NOTIFY_MODE		CTL_CODE(FILE_DEVICE_UNKNOWN, 0x1012, METHOD_BUFFERED, FILE_ANY_ACCESS)
 #define IOCTL_TRANSFER_SYSROOT		CTL_CODE(FILE_DEVICE_UNKNOWN, 0x1013, METHOD_BUFFERED, FILE_ANY_ACCESS)
 
+typedef NTSTATUS(*QUERY_INFO_PROCESS) (HANDLE ProcessHandle, PROCESSINFOCLASS ProcessInformationClass, PVOID ProcessInformation, ULONG ProcessInformationLength, PULONG ReturnLength);
+
 typedef	struct _PATH_TABLE
 {
 	WCHAR dos_name[3];
@@ -86,3 +88,6 @@ extern WCHAR				g_white_process[6][MAXPATHLEN];
 extern BOOLEAN				g_is_notify_mode;
 
 PWCHAR get_proc_name_by_pid(IN  HANDLE   dwProcessId, PWCHAR pPath);
+BOOLEAN is_process_in_white_list(HANDLE pid);
+
+extern QUERY_INFO_PROCESS			g_ZwQueryInformationProcess ;

@@ -4,14 +4,14 @@
 #include "regmon.h"
 #include <Strsafe.h>
 //ZwQuerySystemInformation
-typedef NTSTATUS(*QUERY_INFO_PROCESS) (HANDLE ProcessHandle, PROCESSINFOCLASS ProcessInformationClass, PVOID ProcessInformation, ULONG ProcessInformationLength, PULONG ReturnLength);
+
 //typedef NTSTATUS(*QUERY_SYSTEM_INFO) (HANDLE ProcessHandle, PROCESSINFOCLASS ProcessInformationClass, PVOID ProcessInformation, ULONG ProcessInformationLength, PULONG ReturnLength);
 
 PDEVICE_OBJECT              g_device_obj = NULL;
 BOOLEAN						g_is_driver_init = FALSE;
 HANDLE						g_current_pid = NULL;
 BOOLEAN						g_is_reg_run = FALSE;
-BOOLEAN						g_is_proc_run = TRUE;
+BOOLEAN						g_is_proc_run = FALSE;
 BOOLEAN						g_is_file_run = FALSE;
 PDRIVER_OBJECT				g_driver_obj = NULL;
 WCHAR						g_device_name[MAXNAMELEN];
@@ -71,6 +71,23 @@ void build_white_process_list()
 	StringCbCatW(g_white_process[5], MAXPATHLEN*sizeof(WCHAR), L"\\WINDOWS\\system32\\winlogon.exe");
 }
 
+BOOLEAN is_process_in_white_list(HANDLE pid)
+{
+	WCHAR	temp_path[MAXPATHLEN];
+	int i = 0;
+	if (!get_proc_name_by_pid(pid, temp_path))
+	{
+		return FALSE;
+	}
+	for (; i < 6; i++)
+	{
+		if (_wcsicmp(temp_path, g_white_process[i]) == 0)
+		{
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
 
 PWCHAR get_proc_name_by_pid(IN  HANDLE   dwProcessId, PWCHAR pPath)
 {
