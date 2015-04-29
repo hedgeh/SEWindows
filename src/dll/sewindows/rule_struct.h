@@ -29,6 +29,10 @@
 #define  OP_PROC_SUSPEND_RESUME				7  // 挂起进程
 #define  OP_THREAD_KILL						8  // 杀死线程
 #define  OP_THREAD_SUSPEND_RESUME			9  // 恢复线程
+#define  OP_THREAD_GET_CONTEXT				10  // 获取CONTEXT
+#define  OP_THREAD_SET_CONTEXT				11  // 设置CONTEXT
+#define  OP_PROC_DUPHANDLE				    12  // 复制句柄
+
 
 #define  OP_REG_READ						1  // 注册表读
 #define  OP_REG_DELETE_VALUE_KEY			3  // 删除键值

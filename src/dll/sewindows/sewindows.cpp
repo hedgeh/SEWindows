@@ -89,12 +89,36 @@ BOOLEAN notify_callback_func(Param& op)
 				return g_sewin_operation.process_susresume(user_name, proc_path, dest_proc_path);
 			}
 			break;
+		case OP_PROC_DUPHANDLE:
+			if (g_sewin_operation.process_dup_handlle)
+			{
+				get_proc_info_by_pid(prule_node->sub_pid, user_name, proc_path);
+				get_proc_path_by_pid((DWORD)prule_node->obj_pid, dest_proc_path);
+				return g_sewin_operation.process_dup_handlle(user_name, proc_path, dest_proc_path);
+			}
+			break;
 		case OP_THREAD_KILL:
 			if (g_sewin_operation.thread_kill)
 			{
 				get_proc_info_by_pid(prule_node->sub_pid, user_name, proc_path);
 				get_proc_path_by_pid((DWORD)prule_node->obj_pid, dest_proc_path);
 				return g_sewin_operation.thread_kill(user_name, proc_path, dest_proc_path);
+			}
+			break;
+		case OP_THREAD_GET_CONTEXT:
+			if (g_sewin_operation.thread_get_context)
+			{
+				get_proc_info_by_pid(prule_node->sub_pid, user_name, proc_path);
+				get_proc_path_by_pid((DWORD)prule_node->obj_pid, dest_proc_path);
+				return g_sewin_operation.thread_get_context(user_name, proc_path, dest_proc_path);
+			}
+			break;
+		case OP_THREAD_SET_CONTEXT:
+			if (g_sewin_operation.thread_set_context)
+			{
+				get_proc_info_by_pid(prule_node->sub_pid, user_name, proc_path);
+				get_proc_path_by_pid((DWORD)prule_node->obj_pid, dest_proc_path);
+				return g_sewin_operation.thread_set_context(user_name, proc_path, dest_proc_path);
 			}
 			break;
 		case OP_THREAD_SUSPEND_RESUME:
