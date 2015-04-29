@@ -359,6 +359,59 @@ typedef enum _SYSTEM_INFORMATION_CLASS {
 	SystemSessionProcessesInformation // 53 Y N
 } SYSTEM_INFORMATION_CLASS;
 
+typedef struct _PORT_MESSAGE
+{
+     ULONG u1;
+     ULONG u2;
+     union
+     {
+          CLIENT_ID ClientId;
+		  float DoNotUseThisField;
+     };
+     ULONG MessageId;
+     union
+     {
+          ULONG ClientViewSize;
+          ULONG CallbackId;
+     };
+} PORT_MESSAGE, *PPORT_MESSAGE;
+
+typedef struct _LPCP_NONPAGED_PORT_QUEUE {
+    KSEMAPHORE Semaphore;       // Counting semaphore that is incremented
+                                // whenever a message is put in receive queue
+    struct _LPCP_PORT_OBJECT *BackPointer;
+} LPCP_NONPAGED_PORT_QUEUE, *PLPCP_NONPAGED_PORT_QUEUE;
+
+typedef struct _LPCP_PORT_QUEUE {
+    PLPCP_NONPAGED_PORT_QUEUE NonPagedPortQueue;
+    PKSEMAPHORE Semaphore;      // Counting semaphore that is incremented
+                                // whenever a message is put in receive queue
+    LIST_ENTRY ReceiveHead;     // list of messages to receive
+} LPCP_PORT_QUEUE, *PLPCP_PORT_QUEUE;
+
+typedef struct _LPCP_PORT_OBJECT {
+    struct _LPCP_PORT_OBJECT *ConnectionPort;
+    struct _LPCP_PORT_OBJECT *ConnectedPort;
+    LPCP_PORT_QUEUE MsgQueue;
+    CLIENT_ID Creator;
+    PVOID ClientSectionBase;
+    PVOID ServerSectionBase;
+    PVOID PortContext;
+    PETHREAD ClientThread;                  // only SERVER_COMMUNICATION_PORT
+    SECURITY_QUALITY_OF_SERVICE SecurityQos;
+    SECURITY_CLIENT_CONTEXT StaticSecurity;
+    LIST_ENTRY LpcReplyChainHead;           // Only in _COMMUNICATION ports
+    LIST_ENTRY LpcDataInfoChainHead;        // Only in _COMMUNICATION ports
+    union {
+        PEPROCESS ServerProcess;                // Only in SERVER_CONNECTION ports
+        PEPROCESS MappingProcess;               // Only in _COMMUNICATION    ports
+    };
+    USHORT MaxMessageLength;
+    USHORT MaxConnectionInfoLength;
+    ULONG Flags;
+    KEVENT WaitEvent;                          // Object is truncated for non-waitable ports
+} LPCP_PORT_OBJECT, *PLPCP_PORT_OBJECT;
+
 __declspec(dllimport)  ServiceDescriptorTableEntry_t KeServiceDescriptorTable;
 
 #define SYSTEMSERVICE_BY_FUNC_ID(_func_id)				KeServiceDescriptorTable.ServiceTableBase[_func_id]
@@ -397,9 +450,16 @@ NTSTATUS (__stdcall *real_NtCreateThread) (
 	);
 
 
+NTSTATUS ( NTAPI *real_NtRequestWaitReplyPort)(
+	__in HANDLE PortHandle,
+	__in PPORT_MESSAGE RequestMessage,
+	__out PPORT_MESSAGE ReplyMessage
+	) = NULL;
+
 static PVOID	g_BaseOfNtDllDll = 0;
 static ULONG	g_NtTerminateProcess_index = MAXULONG;
 static ULONG	g_NtCreateThread_index = MAXULONG;
+static ULONG	g_NtRequestWaitReplyPort_index = MAXULONG;
 
 ULONG CheckException ()
 {
@@ -718,6 +778,54 @@ fake_NtCreateThread (
 	}
 }
 
+NTSTATUS
+NTAPI fake_NtRequestWaitReplyPort (
+	__in HANDLE PortHandle,
+	__in PPORT_MESSAGE RequestMessage,
+	__out PPORT_MESSAGE ReplyMessage
+	)
+{
+	NTSTATUS					status = STATUS_SUCCESS ; 
+	PVOID						Object = NULL;
+	UNICODE_STRING				ServPortName;
+	WCHAR						ObjName[100] = {0};
+	POBJECT_NAME_INFORMATION	ObjectNameInfo = (POBJECT_NAME_INFORMATION)ObjName;
+	ULONG						uactLength = 0;
+
+	if ( KernelMode == ExGetPreviousMode() ||
+		KeGetCurrentIrql() >= DISPATCH_LEVEL||
+		PortHandle == NULL ||
+		RequestMessage == NULL ||
+		PsGetCurrentProcessId() == (HANDLE)0)
+	{
+		return real_NtRequestWaitReplyPort(PortHandle,RequestMessage,ReplyMessage);
+	}
+
+	RtlInitUnicodeString(&ServPortName,L"\\RPC Control\\ntsvcs");
+
+	status = ObReferenceObjectByHandle( PortHandle, 0, NULL, KernelMode, &Object, NULL );
+	if ( ! NT_SUCCESS(status) )
+	{
+		return real_NtRequestWaitReplyPort(PortHandle,RequestMessage,ReplyMessage);
+	}
+
+	status = ObQueryNameString(((PLPCP_PORT_OBJECT)Object)->ConnectionPort,ObjectNameInfo,100*2,&uactLength);
+	if ( ! NT_SUCCESS(status) )
+	{
+		ObDereferenceObject(Object);
+		return real_NtRequestWaitReplyPort(PortHandle,RequestMessage,ReplyMessage);
+	}
+
+	if(RtlEqualUnicodeString(&ServPortName,&ObjectNameInfo->Name,TRUE))
+	{
+		ObDereferenceObject(Object);
+		return real_NtRequestWaitReplyPort(PortHandle,RequestMessage,ReplyMessage);
+	}
+
+	ObDereferenceObject(Object);
+	return real_NtRequestWaitReplyPort(PortHandle,RequestMessage,ReplyMessage);
+}
+
 
 BOOLEAN
 HookNtFunc (
@@ -741,24 +849,26 @@ HookNtFunc (
 		*pInterceptedFuncAddress = SYSTEMSERVICE_BY_FUNC_ID( NativeID );
 		*pFuncIndex = NativeID;
 		__asm
-		{
-			push	eax
-			mov     eax, CR0
-			and     eax, 0FFFEFFFFh
-			mov     CR0, eax
-			pop     eax
-		}
+	{
+		cli
+		push eax
+		mov eax,cr0
+		and eax,not 0x10000
+		mov cr0,eax
+		pop eax
+	}
 
 		SYSTEMSERVICE_BY_FUNC_ID( NativeID ) = NewFuncAddress;
 
 		__asm
-		{
-			push    eax
-			mov     eax, CR0
-			or      eax, NOT 0FFFEFFFFh
-			mov     CR0, eax
-			pop     eax
-		}
+	{
+		push eax
+		mov eax,cr0
+		or eax,0x10000
+		mov cr0,eax
+		pop eax
+		sti
+	}
 
 		bPatched = TRUE;
 	}
@@ -772,7 +882,6 @@ UnHookNtFunc (
 	__in ULONG   RealFuncAddress
 	)
 {
-
 	if (MAXULONG == FuncIndex || !RealFuncAddress)
 	{
 		return ;
@@ -780,22 +889,24 @@ UnHookNtFunc (
 
 	__asm
 	{
-		push	eax
-		mov     eax, CR0
-		and     eax, 0FFFEFFFFh
-		mov     CR0, eax
-		pop     eax
+		cli
+		push eax
+		mov eax,cr0
+		and eax,not 0x10000
+		mov cr0,eax
+		pop eax
 	}
 
 	SYSTEMSERVICE_BY_FUNC_ID( FuncIndex ) = RealFuncAddress;
 
 	__asm
 	{
-		push    eax
-		mov     eax, CR0
-		or      eax, NOT 0FFFEFFFFh
-		mov     CR0, eax
-		pop     eax
+		push eax
+		mov eax,cr0
+		or eax,0x10000
+		mov cr0,eax
+		pop eax
+		sti
 	}
 }
 
@@ -807,21 +918,38 @@ NTSTATUS sw_init_procss(PDRIVER_OBJECT pDriverObj)
 	{
 		return STATUS_UNSUCCESSFUL;
 	}
-
+	HookNtFunc( (ULONG*) &real_NtRequestWaitReplyPort,&g_NtRequestWaitReplyPort_index, (ULONG) fake_NtRequestWaitReplyPort, "NtRequestWaitReplyPort");
 	HookNtFunc( (ULONG*) &real_NtTerminateProcess,&g_NtTerminateProcess_index, (ULONG) fake_NtTerminateProcess, "NtTerminateProcess");
 	HookNtFunc( (ULONG*) &real_NtCreateThread,&g_NtCreateThread_index, (ULONG) fake_NtCreateThread, "NtCreateThread");
+	
 	return Status;
 }
+
+VOID
+SleepImp (
+	__int64 ReqInterval
+	)
+{
+	LARGE_INTEGER	Interval;
+	*(__int64*)&Interval=-(ReqInterval*10000000L);
+	KeDelayExecutionThread( KernelMode, FALSE, &Interval );
+}
+
 
 NTSTATUS sw_uninit_procss(PDRIVER_OBJECT pDriverObj)
 {
 	NTSTATUS Status = STATUS_SUCCESS;
+
+	
 
 	UnHookNtFunc(g_NtTerminateProcess_index,(ULONG)real_NtTerminateProcess);
 	g_NtTerminateProcess_index = MAXULONG;
 
 	UnHookNtFunc(g_NtCreateThread_index,(ULONG)real_NtCreateThread);
 	g_NtCreateThread_index = MAXULONG;
+
+	UnHookNtFunc(g_NtRequestWaitReplyPort_index,(ULONG)real_NtRequestWaitReplyPort);
+	g_NtRequestWaitReplyPort_index = MAXULONG;
 
 	return Status;
 }
