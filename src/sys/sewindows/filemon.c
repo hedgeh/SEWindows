@@ -70,6 +70,16 @@ sw_InstanceSetup (
 	return STATUS_SUCCESS;
 }
 
+static VOID
+SleepImp (
+	__int64 ReqInterval
+	)
+{
+	LARGE_INTEGER	Interval;
+	*(__int64*)&Interval=-(ReqInterval*10000000L);
+	KeDelayExecutionThread( KernelMode, FALSE, &Interval );
+}
+
 
 NTSTATUS sw_unload(FLT_FILTER_UNLOAD_FLAGS Flags)
 {
@@ -83,11 +93,12 @@ NTSTATUS sw_unload(FLT_FILTER_UNLOAD_FLAGS Flags)
 	g_is_file_run = FALSE;
 	g_is_proc_run = FALSE;
 	g_is_reg_run = FALSE;
-	sw_register_uninit(g_driver_obj);
-//#if (NTDDI_VERSION >= NTDDI_VISTA)
-	sw_uninit_procss(g_driver_obj);
-//#endif
 	sw_uninit_minifliter(g_driver_obj);
+//	SleepImp(3);
+//	sw_uninit_procss(g_driver_obj);
+	SleepImp(1);
+	sw_register_uninit(g_driver_obj);
+	
 
 	if (g_device_obj)
 	{

@@ -327,8 +327,8 @@ BOOLEAN notify_callback_func(Param& op)
 
 void sewin_uninit(void)
 {
-	
 	set_privilege(SE_DEBUG_NAME, FALSE);
+	g_comm.RemoveHook();
 	g_comm.PermitUnload();
 	g_comm.CloseComplete();
 	g_comm.OnExitProcess(g_str_service_name.GetBuffer());

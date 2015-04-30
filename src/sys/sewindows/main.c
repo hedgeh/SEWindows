@@ -3,9 +3,6 @@
 #include "processmon.h"
 #include "regmon.h"
 #include <Strsafe.h>
-//ZwQuerySystemInformation
-
-//typedef NTSTATUS(*QUERY_SYSTEM_INFO) (HANDLE ProcessHandle, PROCESSINFOCLASS ProcessInformationClass, PVOID ProcessInformation, ULONG ProcessInformationLength, PULONG ReturnLength);
 
 PDEVICE_OBJECT              g_device_obj = NULL;
 BOOLEAN						g_is_driver_init = FALSE;
@@ -70,6 +67,8 @@ void build_white_process_list()
 	StringCbCopyW(g_white_process[5], MAXPATHLEN*sizeof(WCHAR), g_windows_directory);
 	StringCbCatW(g_white_process[5], MAXPATHLEN*sizeof(WCHAR), L"\\WINDOWS\\system32\\winlogon.exe");
 }
+
+
 
 BOOLEAN is_process_in_white_list(HANDLE pid)
 {
@@ -196,8 +195,11 @@ NTSTATUS dispatch_ictl(IN PDEVICE_OBJECT pDevObj, IN PIRP pIrp)
 	case IOCTL_START_FILEMONITOR:
 		g_is_file_run = TRUE;
 		break;
-	case IOCTL_PAUSE_FILEMONITOR:
+	case IOCTL_PAUSE_FILEMONITOR: 
 		g_is_file_run = FALSE;
+		break;
+	case IOCTL_REMOVE_HOOK: 
+		sw_uninit_procss(g_driver_obj);
 		break;
 	case IOCTL_STOP_ALL:
 		g_is_reg_run = FALSE;
@@ -257,11 +259,8 @@ NTSTATUS dispatch_shutdown(PDEVICE_OBJECT DeviceObject, PIRP Irp)
 	g_is_reg_run = FALSE;
 
 	sw_register_uninit(g_driver_obj);
-//#if (NTDDI_VERSION >= NTDDI_VISTA)
-	sw_uninit_procss(g_driver_obj);
-//#endif
 	sw_uninit_minifliter(g_driver_obj);
-
+	sw_uninit_procss(g_driver_obj);
 	if (g_device_obj)
 	{
 		IoUnregisterShutdownNotification(g_device_obj);
@@ -273,6 +272,7 @@ NTSTATUS dispatch_shutdown(PDEVICE_OBJECT DeviceObject, PIRP Irp)
 	return STATUS_SUCCESS;
 }
 
+
 VOID driver_unload(PDRIVER_OBJECT DriverObject)
 {
 	UNICODE_STRING deviceDosName;
@@ -281,11 +281,13 @@ VOID driver_unload(PDRIVER_OBJECT DriverObject)
 	g_is_proc_run = FALSE;
 	g_is_reg_run = FALSE;
 
-	sw_register_uninit(g_driver_obj);
-//#if (NTDDI_VERSION >= NTDDI_VISTA)
-	sw_uninit_procss(g_driver_obj);
-//#endif
 	sw_uninit_minifliter(g_driver_obj);
+//	SleepImp(3);
+//	sw_uninit_procss(g_driver_obj);
+//	SleepImp(1);
+	sw_register_uninit(g_driver_obj);
+
+	
 
 	if (g_device_obj)
 	{

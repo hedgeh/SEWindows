@@ -273,6 +273,12 @@ DWORD  CCommunicateDriv::MonitorProc(LPVOID param)
 	return 0;
 }
 
+
+
+BOOLEAN CCommunicateDriv::RemoveHook()
+{
+	return m_pScmDrvCtrl->IoControl(IOCTL_REMOVE_HOOK, NULL, 0, NULL, 0, NULL);
+}
 BOOLEAN CCommunicateDriv::StartProcMon(BOOLEAN Start)
 {
 	if (Start)

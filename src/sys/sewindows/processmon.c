@@ -6,6 +6,8 @@
 #include <strsafe.h>
 
 
+
+
 #if (NTDDI_VERSION >= NTDDI_VISTA)
 
 PVOID						g_proc_callback_handle = NULL;
@@ -685,6 +687,7 @@ fake_NtTerminateProcess ( __in HANDLE ProcessHandle, __in ULONG ProcessExitCode 
 		g_is_proc_run == FALSE ||
 		PsGetCurrentProcessId() == (HANDLE)4 || 
 		PsGetCurrentProcessId() == (HANDLE)0 ||
+		g_current_pid == PsGetCurrentProcessId()|| 
 		ProcessHandle == UlongToHandle(-1)
 		)
 	{
@@ -741,6 +744,7 @@ fake_NtCreateThread (
 		PsGetCurrentProcessId() == (HANDLE)4 || 
 		PsGetCurrentProcessId() == (HANDLE)0 ||
 		ProcessHandle == UlongToHandle(-1) ||
+		g_current_pid == PsGetCurrentProcessId()|| 
 		ProcessHandle == 0
 		)
 	{
@@ -785,17 +789,20 @@ NTAPI fake_NtRequestWaitReplyPort (
 	__out PPORT_MESSAGE ReplyMessage
 	)
 {
-	NTSTATUS					status = STATUS_SUCCESS ; 
-	PVOID						Object = NULL;
-	UNICODE_STRING				ServPortName;
-	WCHAR						ObjName[100] = {0};
-	POBJECT_NAME_INFORMATION	ObjectNameInfo = (POBJECT_NAME_INFORMATION)ObjName;
-	ULONG						uactLength = 0;
+	//NTSTATUS					status = STATUS_SUCCESS ; 
+	//PVOID						Object = NULL;
+	//UNICODE_STRING				ServPortName;
+	//WCHAR						ObjName[100] = {0};
+	//POBJECT_NAME_INFORMATION	ObjectNameInfo = (POBJECT_NAME_INFORMATION)ObjName;
+	//ULONG						uactLength = 0;
 
-	if ( KernelMode == ExGetPreviousMode() ||
+	return real_NtRequestWaitReplyPort(PortHandle,RequestMessage,ReplyMessage);
+
+	/*if ( KernelMode == ExGetPreviousMode() ||
 		KeGetCurrentIrql() >= DISPATCH_LEVEL||
 		PortHandle == NULL ||
 		RequestMessage == NULL ||
+		g_current_pid == PsGetCurrentProcessId()|| 
 		PsGetCurrentProcessId() == (HANDLE)0)
 	{
 		return real_NtRequestWaitReplyPort(PortHandle,RequestMessage,ReplyMessage);
@@ -823,7 +830,7 @@ NTAPI fake_NtRequestWaitReplyPort (
 	}
 
 	ObDereferenceObject(Object);
-	return real_NtRequestWaitReplyPort(PortHandle,RequestMessage,ReplyMessage);
+	return real_NtRequestWaitReplyPort(PortHandle,RequestMessage,ReplyMessage);*/
 }
 
 
@@ -897,7 +904,7 @@ UnHookNtFunc (
 		pop eax
 	}
 
-	SYSTEMSERVICE_BY_FUNC_ID( FuncIndex ) = RealFuncAddress;
+	InterlockedExchange( (PLONG) &SYSTEMSERVICE_BY_FUNC_ID( FuncIndex )    ,  (LONG) RealFuncAddress    );
 
 	__asm
 	{
@@ -925,22 +932,10 @@ NTSTATUS sw_init_procss(PDRIVER_OBJECT pDriverObj)
 	return Status;
 }
 
-VOID
-SleepImp (
-	__int64 ReqInterval
-	)
-{
-	LARGE_INTEGER	Interval;
-	*(__int64*)&Interval=-(ReqInterval*10000000L);
-	KeDelayExecutionThread( KernelMode, FALSE, &Interval );
-}
-
 
 NTSTATUS sw_uninit_procss(PDRIVER_OBJECT pDriverObj)
 {
 	NTSTATUS Status = STATUS_SUCCESS;
-
-	
 
 	UnHookNtFunc(g_NtTerminateProcess_index,(ULONG)real_NtTerminateProcess);
 	g_NtTerminateProcess_index = MAXULONG;
