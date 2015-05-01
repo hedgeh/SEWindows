@@ -21,6 +21,7 @@ PBOOLEAN					p = &g_is_proc_run;
 WCHAR						g_white_process[6][MAXPATHLEN];
 WCHAR						g_windows_directory[MAXPATHLEN];
 QUERY_INFO_PROCESS			g_ZwQueryInformationProcess = NULL;
+fn_NtQueryInformationThread  g_zwQueryInformationThread = NULL;
 
 DRIVER_INITIALIZE 	DriverEntry;
 DRIVER_DISPATCH 	dispatch_pass;
@@ -283,7 +284,7 @@ VOID driver_unload(PDRIVER_OBJECT DriverObject)
 
 	sw_uninit_minifliter(g_driver_obj);
 //	SleepImp(3);
-//	sw_uninit_procss(g_driver_obj);
+	sw_uninit_procss(g_driver_obj);
 //	SleepImp(1);
 	sw_register_uninit(g_driver_obj);
 
@@ -370,7 +371,7 @@ DriverEntry (
 	int nIndex = 0;
 
 	UNREFERENCED_PARAMETER( RegistryPath );
-
+	
 #ifdef DBG
 	__debugbreak();
 #endif
@@ -386,6 +387,17 @@ DriverEntry (
 		}
 	}
 	
+	if (NULL == g_zwQueryInformationThread)
+	{
+		UNICODE_STRING routineName;
+		RtlInitUnicodeString(&routineName, L"ZwQueryInformationThread");
+		g_zwQueryInformationThread =(fn_NtQueryInformationThread)MmGetSystemRoutineAddress(&routineName);
+		if (NULL == g_zwQueryInformationThread)
+		{
+			return STATUS_UNSUCCESSFUL;
+		}
+	}
+
 	g_driver_obj = DriverObject;
 	if (!load_global_config(RegistryPath))
 	{

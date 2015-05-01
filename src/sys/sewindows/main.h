@@ -26,6 +26,15 @@
 
 typedef NTSTATUS(*QUERY_INFO_PROCESS) (HANDLE ProcessHandle, PROCESSINFOCLASS ProcessInformationClass, PVOID ProcessInformation, ULONG ProcessInformationLength, PULONG ReturnLength);
 
+typedef NTSTATUS
+(*fn_NtQueryInformationThread)(
+    __in HANDLE ThreadHandle,
+    __in THREADINFOCLASS ThreadInformationClass,
+    __out_bcount(ThreadInformationLength) PVOID ThreadInformation,
+    __in ULONG ThreadInformationLength,
+    __out_opt PULONG ReturnLength
+    );
+
 typedef	struct _PATH_TABLE
 {
 	WCHAR dos_name[3];
@@ -92,3 +101,4 @@ PWCHAR get_proc_name_by_pid(IN  HANDLE   dwProcessId, PWCHAR pPath);
 BOOLEAN is_process_in_white_list(HANDLE pid);
 
 extern QUERY_INFO_PROCESS			g_ZwQueryInformationProcess ;
+extern fn_NtQueryInformationThread  g_zwQueryInformationThread;

@@ -607,9 +607,12 @@ IN BOOLEAN  Create
 			g_is_proc_run = FALSE;
 			g_is_reg_run = FALSE;
 			g_is_unload_allowed = TRUE;
+			sw_uninit_procss(g_driver_obj);
+			un_init_process_list();
 		}
 		else
 		{
+			del_pid_from_list(ProcessId);
 			notify_process_exit(ProcessId);
 		}
 	}

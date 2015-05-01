@@ -48,6 +48,9 @@ int _tmain(int argc, TCHAR * argv[])
         return -1;
     }
 
+#ifdef	DEBUG
+	DebugBreak();
+#endif
     // step2. init sewindows
     BOOLEAN bret = monitor_sewin_init();
     if ( !bret )

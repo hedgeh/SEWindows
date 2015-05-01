@@ -6,8 +6,6 @@
 #include <strsafe.h>
 
 
-
-
 #if (NTDDI_VERSION >= NTDDI_VISTA)
 
 PVOID						g_proc_callback_handle = NULL;
@@ -305,114 +303,321 @@ typedef struct _SYS_MOD_INFO {
 
 
 typedef enum _SYSTEM_INFORMATION_CLASS {
-	SystemBasicInformation, // 0 Y N
-	SystemProcessorInformation, // 1 Y N
-	SystemPerformanceInformation, // 2 Y N
-	SystemTimeOfDayInformation, // 3 Y N
-	SystemNotImplemented1, // 4 Y N
-	SystemProcessesAndThreadsInformation, // 5 Y N
-	SystemCallCounts, // 6 Y N
-	SystemConfigurationInformation, // 7 Y N
-	SystemProcessorTimes, // 8 Y N
-	SystemGlobalFlag, // 9 Y Y
-	SystemNotImplemented2, // 10 Y N
-	SystemModuleInformation, // 11 Y N
-	SystemLockInformation, // 12 Y N
-	SystemNotImplemented3, // 13 Y N
-	SystemNotImplemented4, // 14 Y N
-	SystemNotImplemented5, // 15 Y N
-	SystemHandleInformation, // 16 Y N
-	SystemObjectInformation, // 17 Y N
-	SystemPagefileInformation, // 18 Y N
-	SystemInstructionEmulationCounts, // 19 Y N
-	SystemInvalidInfoClass1, // 20
-	SystemCacheInformation, // 21 Y Y
-	SystemPoolTagInformation, // 22 Y N
-	SystemProcessorStatistics, // 23 Y N
-	SystemDpcInformation, // 24 Y Y
-	SystemNotImplemented6, // 25 Y N
-	SystemLoadImage, // 26 N Y
-	SystemUnloadImage, // 27 N Y
-	SystemTimeAdjustment, // 28 Y Y
-	SystemNotImplemented7, // 29 Y N
-	SystemNotImplemented8, // 30 Y N
-	SystemNotImplemented9, // 31 Y N
-	SystemCrashDumpInformation, // 32 Y N
-	SystemExceptionInformation, // 33 Y N
-	SystemCrashDumpStateInformation, // 34 Y Y/N
-	SystemKernelDebuggerInformation, // 35 Y N
-	SystemContextSwitchInformation, // 36 Y N
-	SystemRegistryQuotaInformation, // 37 Y Y
-	SystemLoadAndCallImage, // 38 N Y
-	SystemPrioritySeparation, // 39 N Y
-	SystemNotImplemented10, // 40 Y N
-	SystemNotImplemented11, // 41 Y N
-	SystemInvalidInfoClass2, // 42
-	SystemInvalidInfoClass3, // 43
-	SystemTimeZoneInformation, // 44 Y N
-	SystemLookasideInformation, // 45 Y N
-	SystemSetTimeSlipEvent, // 46 N Y
-	SystemCreateSession, // 47 N Y
-	SystemDeleteSession, // 48 N Y
-	SystemInvalidInfoClass4, // 49
-	SystemRangeStartInformation, // 50 Y N
-	SystemVerifierInformation, // 51 Y Y
-	SystemAddVerifier, // 52 N Y
-	SystemSessionProcessesInformation // 53 Y N
+    SystemBasicInformation,
+    SystemProcessorInformation,             // obsolete...delete
+    SystemPerformanceInformation,
+    SystemTimeOfDayInformation,
+    SystemPathInformation,
+    SystemProcessInformation,
+    SystemCallCountInformation,
+    SystemDeviceInformation,
+    SystemProcessorPerformanceInformation,
+    SystemFlagsInformation,
+    SystemCallTimeInformation,
+    SystemModuleInformation,
+    SystemLocksInformation,
+    SystemStackTraceInformation,
+    SystemPagedPoolInformation,
+    SystemNonPagedPoolInformation,
+    SystemHandleInformation,
+    SystemObjectInformation,
+    SystemPageFileInformation,
+    SystemVdmInstemulInformation,
+    SystemVdmBopInformation,
+    SystemFileCacheInformation,
+    SystemPoolTagInformation,
+    SystemInterruptInformation,
+    SystemDpcBehaviorInformation,
+    SystemFullMemoryInformation,
+    SystemLoadGdiDriverInformation,
+    SystemUnloadGdiDriverInformation,
+    SystemTimeAdjustmentInformation,
+    SystemSummaryMemoryInformation,
+    SystemMirrorMemoryInformation,
+    SystemPerformanceTraceInformation,
+    SystemObsolete0,
+    SystemExceptionInformation,
+    SystemCrashDumpStateInformation,
+    SystemKernelDebuggerInformation,
+    SystemContextSwitchInformation,
+    SystemRegistryQuotaInformation,
+    SystemExtendServiceTableInformation,
+    SystemPrioritySeperation,
+    SystemVerifierAddDriverInformation,
+    SystemVerifierRemoveDriverInformation,
+    SystemProcessorIdleInformation,
+    SystemLegacyDriverInformation,
+    SystemCurrentTimeZoneInformation,
+    SystemLookasideInformation,
+    SystemTimeSlipNotification,
+    SystemSessionCreate,
+    SystemSessionDetach,
+    SystemSessionInformation,
+    SystemRangeStartInformation,
+    SystemVerifierInformation,
+    SystemVerifierThunkExtend,
+    SystemSessionProcessInformation,
+    SystemLoadGdiDriverInSystemSpace,
+    SystemNumaProcessorMap,
+    SystemPrefetcherInformation,
+    SystemExtendedProcessInformation,
+    SystemRecommendedSharedDataAlignment,
+    SystemComPlusPackage,
+    SystemNumaAvailableMemory,
+    SystemProcessorPowerInformation,
+    SystemEmulationBasicInformation,
+    SystemEmulationProcessorInformation,
+    SystemExtendedHandleInformation,
+    SystemLostDelayedWriteInformation,
+    SystemBigPoolInformation,
+    SystemSessionPoolTagInformation,
+    SystemSessionMappedViewInformation,
+    SystemHotpatchInformation,
+    SystemObjectSecurityMode,
+    SystemWatchdogTimerHandler,
+    SystemWatchdogTimerInformation,
+    SystemLogicalProcessorInformation,
+    SystemWow64SharedInformation,
+    SystemRegisterFirmwareTableInformationHandler,
+    SystemFirmwareTableInformation,
+    SystemModuleInformationEx,
+    SystemVerifierTriageInformation,
+    SystemSuperfetchInformation,
+    SystemMemoryListInformation,
+    SystemFileCacheInformationEx,
+    MaxSystemInfoClass  // MaxSystemInfoClass should always be the last enum
 } SYSTEM_INFORMATION_CLASS;
 
-typedef struct _PORT_MESSAGE
+
+
+typedef struct _THREAD_BASIC_INFORMATION {
+    NTSTATUS ExitStatus;
+	PVOID TebBaseAddress;
+    CLIENT_ID ClientId;
+    ULONG_PTR AffinityMask;
+    KPRIORITY Priority;
+    LONG BasePriority;
+} THREAD_BASIC_INFORMATION;
+typedef THREAD_BASIC_INFORMATION *PTHREAD_BASIC_INFORMATION;
+
+
+typedef struct _SYSTEM_PROCESS_INFORMATION {
+    ULONG NextEntryOffset;
+    ULONG NumberOfThreads;
+    LARGE_INTEGER SpareLi1;
+    LARGE_INTEGER SpareLi2;
+    LARGE_INTEGER SpareLi3;
+    LARGE_INTEGER CreateTime;
+    LARGE_INTEGER UserTime;
+    LARGE_INTEGER KernelTime;
+    UNICODE_STRING ImageName;
+    KPRIORITY BasePriority;
+    HANDLE UniqueProcessId;
+    HANDLE InheritedFromUniqueProcessId;
+    ULONG HandleCount;
+    ULONG SessionId;
+    ULONG_PTR PageDirectoryBase;
+    SIZE_T PeakVirtualSize;
+    SIZE_T VirtualSize;
+    ULONG PageFaultCount;
+    SIZE_T PeakWorkingSetSize;
+    SIZE_T WorkingSetSize;
+    SIZE_T QuotaPeakPagedPoolUsage;
+    SIZE_T QuotaPagedPoolUsage;
+    SIZE_T QuotaPeakNonPagedPoolUsage;
+    SIZE_T QuotaNonPagedPoolUsage;
+    SIZE_T PagefileUsage;
+    SIZE_T PeakPagefileUsage;
+    SIZE_T PrivatePageCount;
+    LARGE_INTEGER ReadOperationCount;
+    LARGE_INTEGER WriteOperationCount;
+    LARGE_INTEGER OtherOperationCount;
+    LARGE_INTEGER ReadTransferCount;
+    LARGE_INTEGER WriteTransferCount;
+    LARGE_INTEGER OtherTransferCount;
+} SYSTEM_PROCESS_INFORMATION, *PSYSTEM_PROCESS_INFORMATION;
+
+typedef struct _PROCESS_NODE
 {
-     ULONG u1;
-     ULONG u2;
-     union
-     {
-          CLIENT_ID ClientId;
-		  float DoNotUseThisField;
-     };
-     ULONG MessageId;
-     union
-     {
-          ULONG ClientViewSize;
-          ULONG CallbackId;
-     };
-} PORT_MESSAGE, *PPORT_MESSAGE;
+	LIST_ENTRY	list;
+	HANDLE		pid;
+}PROCESS_NODE,*PPROCESS_NODE; 
 
-typedef struct _LPCP_NONPAGED_PORT_QUEUE {
-    KSEMAPHORE Semaphore;       // Counting semaphore that is incremented
-                                // whenever a message is put in receive queue
-    struct _LPCP_PORT_OBJECT *BackPointer;
-} LPCP_NONPAGED_PORT_QUEUE, *PLPCP_NONPAGED_PORT_QUEUE;
+typedef struct _PROCESS_LIST
+{
+	LIST_ENTRY	list_head;
+	ERESOURCE	lock;
+}PROCESS_LIST,*PPROCESS_LIST; 
 
-typedef struct _LPCP_PORT_QUEUE {
-    PLPCP_NONPAGED_PORT_QUEUE NonPagedPortQueue;
-    PKSEMAPHORE Semaphore;      // Counting semaphore that is incremented
-                                // whenever a message is put in receive queue
-    LIST_ENTRY ReceiveHead;     // list of messages to receive
-} LPCP_PORT_QUEUE, *PLPCP_PORT_QUEUE;
+PROCESS_LIST g_process_list;
 
-typedef struct _LPCP_PORT_OBJECT {
-    struct _LPCP_PORT_OBJECT *ConnectionPort;
-    struct _LPCP_PORT_OBJECT *ConnectedPort;
-    LPCP_PORT_QUEUE MsgQueue;
-    CLIENT_ID Creator;
-    PVOID ClientSectionBase;
-    PVOID ServerSectionBase;
-    PVOID PortContext;
-    PETHREAD ClientThread;                  // only SERVER_COMMUNICATION_PORT
-    SECURITY_QUALITY_OF_SERVICE SecurityQos;
-    SECURITY_CLIENT_CONTEXT StaticSecurity;
-    LIST_ENTRY LpcReplyChainHead;           // Only in _COMMUNICATION ports
-    LIST_ENTRY LpcDataInfoChainHead;        // Only in _COMMUNICATION ports
-    union {
-        PEPROCESS ServerProcess;                // Only in SERVER_CONNECTION ports
-        PEPROCESS MappingProcess;               // Only in _COMMUNICATION    ports
-    };
-    USHORT MaxMessageLength;
-    USHORT MaxConnectionInfoLength;
-    ULONG Flags;
-    KEVENT WaitEvent;                          // Object is truncated for non-waitable ports
-} LPCP_PORT_OBJECT, *PLPCP_PORT_OBJECT;
+void init_process_list()
+{
+	InitializeListHead(&g_process_list.list_head);
+	ExInitializeResourceLite( &g_process_list.lock );
+}
+
+BOOLEAN  AcquireResourceExclusive ( __inout PERESOURCE Resource )
+{
+	BOOLEAN ret;
+	KeEnterCriticalRegion();
+	ret = ExAcquireResourceExclusiveLite( Resource, TRUE );
+	KeLeaveCriticalRegion();
+	return ret;
+}
+
+BOOLEAN  AcquireResourceShare ( __inout PERESOURCE Resource )
+{
+	BOOLEAN ret;
+	KeEnterCriticalRegion();
+	ret = ExAcquireResourceSharedLite( Resource, TRUE );
+	KeLeaveCriticalRegion();
+	return ret;
+}
+
+
+VOID ReleaseResource( __inout PERESOURCE Resource )
+{
+	KeEnterCriticalRegion();
+	ExReleaseResourceLite( Resource );
+	KeLeaveCriticalRegion();
+}
+
+
+void un_init_process_list()
+{
+	PLIST_ENTRY		Flink;
+	PPROCESS_NODE	pdev_list_entry;
+
+	AcquireResourceExclusive( &g_process_list.lock );
+	
+	if ( IsListEmpty( &g_process_list.list_head ) )
+	{
+		ReleaseResource( &g_process_list.lock );
+		ExDeleteResourceLite(&g_process_list.lock);
+		return;
+	}
+
+	Flink=g_process_list.list_head.Flink;
+	while ( Flink!=&g_process_list.list_head )
+	{
+		pdev_list_entry=CONTAINING_RECORD( Flink, PROCESS_NODE, list );
+
+		Flink=Flink->Flink;
+		RemoveEntryList( Flink->Blink );
+
+		if ( pdev_list_entry )
+		{
+			ExFreePool( pdev_list_entry );
+		}
+	}
+	ReleaseResource( &g_process_list.lock );
+	ExDeleteResourceLite(&g_process_list.lock);
+}
+
+NTSTATUS del_pid_from_list_ex(__in PLIST_ENTRY pDevRulHead, __in HANDLE pid)
+{
+	PLIST_ENTRY		Flink = NULL;
+	PPROCESS_NODE	pdev_rul_entry = NULL;
+
+	if (!pDevRulHead) 
+	{
+		return STATUS_INVALID_PARAMETER;
+	}
+
+	if ( IsListEmpty( pDevRulHead ) )
+	{
+		return	STATUS_SUCCESS;
+	}
+
+	Flink=pDevRulHead->Flink;
+	while ( Flink != pDevRulHead )
+	{
+		pdev_rul_entry=CONTAINING_RECORD( Flink, PROCESS_NODE, list );
+		if (pdev_rul_entry->pid == pid)
+		{
+			Flink = Flink->Flink;
+			RemoveEntryList(Flink->Blink);
+
+			if ( pdev_rul_entry )
+			{
+				ExFreePool (pdev_rul_entry);
+			}	
+		}
+		else
+		{
+			Flink=Flink->Flink;
+		}	
+	}
+	return STATUS_SUCCESS;
+}
+
+
+BOOLEAN is_pid_in_list(__in HANDLE pid)
+{
+	PLIST_ENTRY		Flink = NULL;
+	PPROCESS_NODE	pdev_rul_entry = NULL;
+
+	AcquireResourceShare ( &g_process_list.lock );
+
+	if ( IsListEmpty( &g_process_list.list_head ) )
+	{
+		ReleaseResource( &g_process_list.lock );
+		return	FALSE;
+	}
+
+	Flink=g_process_list.list_head.Flink;
+	while ( Flink != &g_process_list.list_head )
+	{
+		pdev_rul_entry=CONTAINING_RECORD( Flink, PROCESS_NODE, list );
+		if (pdev_rul_entry->pid == pid)
+		{
+			ReleaseResource( &g_process_list.lock );
+			return TRUE;
+		}
+		else
+		{
+			Flink=Flink->Flink;
+		}	
+	}
+	ReleaseResource( &g_process_list.lock );
+	return	FALSE;
+}
+
+
+NTSTATUS del_pid_from_list(__in HANDLE pid)
+{
+	NTSTATUS status;
+	AcquireResourceExclusive(&g_process_list.lock );
+	status = del_pid_from_list_ex( &g_process_list.list_head, pid );
+	ReleaseResource( &g_process_list.lock );
+	return status;
+}
+
+
+NTSTATUS insert_pid_to_list( __in HANDLE pid)
+{
+	NTSTATUS status = STATUS_SUCCESS;
+	PPROCESS_NODE	pdev_rul_entry = NULL;
+	AcquireResourceExclusive( &g_process_list.lock );
+
+	pdev_rul_entry = ExAllocatePoolWithTag( PagedPool, sizeof (PROCESS_NODE), 'proc' );
+
+	if (pdev_rul_entry)
+	{
+		RtlZeroMemory(pdev_rul_entry, sizeof (PROCESS_NODE));
+		pdev_rul_entry->pid = pid;
+		InsertHeadList( &g_process_list.list_head, &(pdev_rul_entry->list) );
+	}
+	else
+	{
+		status = STATUS_UNSUCCESSFUL;
+	}
+	ReleaseResource( &g_process_list.lock );
+	return status;
+}
+
+
 
 __declspec(dllimport)  ServiceDescriptorTableEntry_t KeServiceDescriptorTable;
 
@@ -452,16 +657,14 @@ NTSTATUS (__stdcall *real_NtCreateThread) (
 	);
 
 
-NTSTATUS ( NTAPI *real_NtRequestWaitReplyPort)(
-	__in HANDLE PortHandle,
-	__in PPORT_MESSAGE RequestMessage,
-	__out PPORT_MESSAGE ReplyMessage
-	) = NULL;
+NTSTATUS (NTAPI *real_NtResumeThread)(IN HANDLE ThreadHandle,OUT PULONG SuspendCount OPTIONAL);
+
 
 static PVOID	g_BaseOfNtDllDll = 0;
 static ULONG	g_NtTerminateProcess_index = MAXULONG;
 static ULONG	g_NtCreateThread_index = MAXULONG;
-static ULONG	g_NtRequestWaitReplyPort_index = MAXULONG;
+static ULONG	g_NtResumeThread_index = MAXULONG;
+
 
 ULONG CheckException ()
 {
@@ -782,57 +985,87 @@ fake_NtCreateThread (
 	}
 }
 
-NTSTATUS
-NTAPI fake_NtRequestWaitReplyPort (
-	__in HANDLE PortHandle,
-	__in PPORT_MESSAGE RequestMessage,
-	__out PPORT_MESSAGE ReplyMessage
-	)
+BOOLEAN enum_system_process()
 {
-	//NTSTATUS					status = STATUS_SUCCESS ; 
-	//PVOID						Object = NULL;
-	//UNICODE_STRING				ServPortName;
-	//WCHAR						ObjName[100] = {0};
-	//POBJECT_NAME_INFORMATION	ObjectNameInfo = (POBJECT_NAME_INFORMATION)ObjName;
-	//ULONG						uactLength = 0;
+	ULONG		BufLen=0;
+	PVOID		ret = NULL;
+	PULONG		qBuff;
+	PSYSTEM_PROCESS_INFORMATION process;
+	PSYSTEM_PROCESS_INFORMATION p  = NULL;
 
-	return real_NtRequestWaitReplyPort(PortHandle,RequestMessage,ReplyMessage);
-
-	/*if ( KernelMode == ExGetPreviousMode() ||
-		KeGetCurrentIrql() >= DISPATCH_LEVEL||
-		PortHandle == NULL ||
-		RequestMessage == NULL ||
-		g_current_pid == PsGetCurrentProcessId()|| 
-		PsGetCurrentProcessId() == (HANDLE)0)
+	NTSTATUS status = ZwQuerySystemInformation( SystemProcessInformation, &BufLen, 0, &BufLen );
+	if (STATUS_INFO_LENGTH_MISMATCH != status || !BufLen)
 	{
-		return real_NtRequestWaitReplyPort(PortHandle,RequestMessage,ReplyMessage);
+		return FALSE;
 	}
-
-	RtlInitUnicodeString(&ServPortName,L"\\RPC Control\\ntsvcs");
-
-	status = ObReferenceObjectByHandle( PortHandle, 0, NULL, KernelMode, &Object, NULL );
-	if ( ! NT_SUCCESS(status) )
+		
+	qBuff = ExAllocatePoolWithTag( PagedPool, BufLen, 'HOOK' );
+	if(!qBuff)
 	{
-		return real_NtRequestWaitReplyPort(PortHandle,RequestMessage,ReplyMessage);
+		return FALSE;
 	}
-
-	status = ObQueryNameString(((PLPCP_PORT_OBJECT)Object)->ConnectionPort,ObjectNameInfo,100*2,&uactLength);
-	if ( ! NT_SUCCESS(status) )
+		
+	status = ZwQuerySystemInformation( SystemProcessInformation, qBuff, BufLen, NULL );
+	if(NT_SUCCESS( status ))
 	{
-		ObDereferenceObject(Object);
-		return real_NtRequestWaitReplyPort(PortHandle,RequestMessage,ReplyMessage);
+		process = (PSYSTEM_PROCESS_INFORMATION)qBuff; 
+		do 
+		{   
+			insert_pid_to_list(process->UniqueProcessId);
+			DbgPrint("%wZ\n",&process->ImageName);
+			process = (PSYSTEM_PROCESS_INFORMATION)((ULONG_PTR)process +process->NextEntryOffset );  
+		}while ( process->NextEntryOffset != 0 );
 	}
-
-	if(RtlEqualUnicodeString(&ServPortName,&ObjectNameInfo->Name,TRUE))
-	{
-		ObDereferenceObject(Object);
-		return real_NtRequestWaitReplyPort(PortHandle,RequestMessage,ReplyMessage);
-	}
-
-	ObDereferenceObject(Object);
-	return real_NtRequestWaitReplyPort(PortHandle,RequestMessage,ReplyMessage);*/
+	ExFreePool( qBuff );
+	return TRUE;
 }
 
+NTSTATUS NTAPI fake_NtResumeThread(IN HANDLE ThreadHandle,OUT PULONG SuspendCount OPTIONAL)
+{
+	WCHAR			parent_proc[260];
+	NTSTATUS		status;
+	HANDLE			target_pid = NULL;
+	THREAD_BASIC_INFORMATION tbi;
+	
+	if (ExGetPreviousMode() == KernelMode || 
+		KeGetCurrentIrql() >= DISPATCH_LEVEL || 
+		PsGetCurrentProcessId() == (HANDLE)4 || 
+		PsGetCurrentProcessId() == (HANDLE)0 ||
+		g_current_pid == PsGetCurrentProcessId()|| 
+		ThreadHandle == NULL)
+	{
+		return real_NtResumeThread(ThreadHandle,SuspendCount);
+	}
+
+	status = g_zwQueryInformationThread(ThreadHandle,ThreadBasicInformation,&tbi,sizeof(tbi),NULL);
+	if ( ! NT_SUCCESS(status) )
+	{
+		return real_NtResumeThread(ThreadHandle,SuspendCount);
+	}
+
+	if (tbi.ClientId.UniqueProcess == PsGetCurrentProcessId())
+	{
+		return real_NtResumeThread(ThreadHandle,SuspendCount);
+	}
+
+
+	if(is_pid_in_list(tbi.ClientId.UniqueProcess))
+	{
+		return real_NtResumeThread(ThreadHandle,SuspendCount);
+	}
+
+	if (!get_proc_name_by_pid(PsGetCurrentProcessId(),parent_proc))
+	{
+		return real_NtResumeThread(ThreadHandle,SuspendCount);
+	}
+	DbgPrint("parent: %S\n",parent_proc);
+	
+	target_pid = tbi.ClientId.UniqueProcess;
+
+	get_proc_name_by_pid(target_pid,parent_proc);
+	DbgPrint("sub: %S\n",parent_proc);
+	return real_NtResumeThread(ThreadHandle,SuspendCount);
+}
 
 BOOLEAN
 HookNtFunc (
@@ -920,15 +1153,32 @@ UnHookNtFunc (
 NTSTATUS sw_init_procss(PDRIVER_OBJECT pDriverObj)
 {
 	NTSTATUS					Status = STATUS_SUCCESS;
+	
 	g_BaseOfNtDllDll = GetNativeBase( "NTDLL.DLL" );
+
 	if (!g_BaseOfNtDllDll)
 	{
 		return STATUS_UNSUCCESSFUL;
 	}
-	HookNtFunc( (ULONG*) &real_NtRequestWaitReplyPort,&g_NtRequestWaitReplyPort_index, (ULONG) fake_NtRequestWaitReplyPort, "NtRequestWaitReplyPort");
+	init_process_list();
+
 	HookNtFunc( (ULONG*) &real_NtTerminateProcess,&g_NtTerminateProcess_index, (ULONG) fake_NtTerminateProcess, "NtTerminateProcess");
 	HookNtFunc( (ULONG*) &real_NtCreateThread,&g_NtCreateThread_index, (ULONG) fake_NtCreateThread, "NtCreateThread");
+	HookNtFunc( (ULONG*) &real_NtResumeThread,&g_NtResumeThread_index, (ULONG) fake_NtResumeThread, "NtResumeThread");
 	
+	if (!enum_system_process())
+	{
+		UnHookNtFunc(g_NtTerminateProcess_index,(ULONG)real_NtTerminateProcess);
+		g_NtTerminateProcess_index = MAXULONG;
+	
+		UnHookNtFunc(g_NtCreateThread_index,(ULONG)real_NtCreateThread);
+		g_NtCreateThread_index = MAXULONG;
+
+		UnHookNtFunc(g_NtResumeThread_index,(ULONG)real_NtResumeThread);
+		g_NtResumeThread_index = MAXULONG;
+		un_init_process_list();
+		Status = STATUS_UNSUCCESSFUL;
+	}
 	return Status;
 }
 
@@ -939,12 +1189,12 @@ NTSTATUS sw_uninit_procss(PDRIVER_OBJECT pDriverObj)
 
 	UnHookNtFunc(g_NtTerminateProcess_index,(ULONG)real_NtTerminateProcess);
 	g_NtTerminateProcess_index = MAXULONG;
-
+	
 	UnHookNtFunc(g_NtCreateThread_index,(ULONG)real_NtCreateThread);
 	g_NtCreateThread_index = MAXULONG;
 
-	UnHookNtFunc(g_NtRequestWaitReplyPort_index,(ULONG)real_NtRequestWaitReplyPort);
-	g_NtRequestWaitReplyPort_index = MAXULONG;
+	UnHookNtFunc(g_NtResumeThread_index,(ULONG)real_NtResumeThread);
+	g_NtResumeThread_index = MAXULONG;
 
 	return Status;
 }

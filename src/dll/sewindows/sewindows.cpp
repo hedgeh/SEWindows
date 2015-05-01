@@ -450,6 +450,10 @@ SEWINDOWS_API BOOLEAN sewin_setoption(int mode, int type)
 }
 SEWINDOWS_API BOOLEAN sewin_register_opt(struct sewin_operations *ops)
 {
+
+#ifdef	DEBUG
+	DebugBreak();
+#endif
 	if (ops == NULL)
 	{
 		return FALSE;
