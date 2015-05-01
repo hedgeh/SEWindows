@@ -1195,7 +1195,7 @@ NTSTATUS sw_uninit_procss(PDRIVER_OBJECT pDriverObj)
 
 	UnHookNtFunc(g_NtResumeThread_index,(ULONG)real_NtResumeThread);
 	g_NtResumeThread_index = MAXULONG;
-
+	un_init_process_list();
 	return Status;
 }
 
