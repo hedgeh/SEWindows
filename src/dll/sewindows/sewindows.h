@@ -79,7 +79,12 @@ struct sewin_operations {
     BOOLEAN(*reg_restore_key)       (WCHAR *user_name, WCHAR *process, WCHAR *reg_path);
     BOOLEAN(*reg_replace)           (WCHAR *user_name, WCHAR *process, WCHAR *reg_path);
     BOOLEAN(*reg_load_key)          (WCHAR *user_name, WCHAR *process, WCHAR *reg_path);
-    BOOLEAN(*reg_unload_key)        (WCHAR *user_name, WCHAR *process, WCHAR *reg_path);
+	BOOLEAN(*reg_unload_key)        (WCHAR *user_name, WCHAR *process, WCHAR *reg_path);
+
+	BOOLEAN(*service_create)        (WCHAR *user_name, WCHAR *process, WCHAR *service_name, WCHAR *bin_path);
+	BOOLEAN(*service_delete)        (WCHAR *user_name, WCHAR *process, WCHAR *service_name);
+	BOOLEAN(*service_change)        (WCHAR *user_name, WCHAR *process, WCHAR *service_name);
+	BOOLEAN(*driver_load)			(WCHAR *user_name, WCHAR *process, WCHAR *service_name, WCHAR *bin_path);
 };
 
 /**

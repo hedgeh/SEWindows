@@ -488,7 +488,13 @@ void un_init_process_list()
 {
 	PLIST_ENTRY		Flink;
 	PPROCESS_NODE	pdev_list_entry;
+	static	BOOLEAN bUnInit = FALSE;
 
+	if (bUnInit)
+	{
+		return;
+	}
+	bUnInit = TRUE;
 	AcquireResourceExclusive( &g_process_list.lock );
 	
 	if ( IsListEmpty( &g_process_list.list_head ) )
@@ -1054,16 +1060,21 @@ NTSTATUS NTAPI fake_NtResumeThread(IN HANDLE ThreadHandle,OUT PULONG SuspendCoun
 		return real_NtResumeThread(ThreadHandle,SuspendCount);
 	}
 
-	if (!get_proc_name_by_pid(PsGetCurrentProcessId(),parent_proc))
-	{
-		return real_NtResumeThread(ThreadHandle,SuspendCount);
-	}
-	DbgPrint("parent: %S\n",parent_proc);
-	
-	target_pid = tbi.ClientId.UniqueProcess;
 
-	get_proc_name_by_pid(target_pid,parent_proc);
-	DbgPrint("sub: %S\n",parent_proc);
+	notify_process_create(tbi.ClientId.UniqueProcess);
+
+	insert_pid_to_list(tbi.ClientId.UniqueProcess);
+
+	//if (!get_proc_name_by_pid(PsGetCurrentProcessId(),parent_proc))
+	//{
+	//	return real_NtResumeThread(ThreadHandle,SuspendCount);
+	//}
+	//DbgPrint("parent: %S\n",parent_proc);
+	//
+	//target_pid = tbi.ClientId.UniqueProcess;
+
+	//get_proc_name_by_pid(target_pid,parent_proc);
+	//DbgPrint("sub: %S\n",parent_proc);
 	return real_NtResumeThread(ThreadHandle,SuspendCount);
 }
 

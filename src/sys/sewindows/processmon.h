@@ -46,11 +46,17 @@
 
 NTSTATUS sw_init_procss(PDRIVER_OBJECT pDriverObj);
 NTSTATUS sw_uninit_procss(PDRIVER_OBJECT pDriverObj);
-NTSTATUS del_pid_from_list(__in HANDLE pid);
-void un_init_process_list();
+
 
 #if (NTDDI_VERSION >= NTDDI_VISTA)
 OB_PREOP_CALLBACK_STATUS pre_procopration_callback( PVOID RegistrationContext, POB_PRE_OPERATION_INFORMATION pOperationInformation);
 VOID create_process_notity_routine( PEPROCESS Process, HANDLE ProcessId, PPS_CREATE_NOTIFY_INFO CreateInfo);
+
+#else
+
+#ifndef _WIN64
+NTSTATUS del_pid_from_list(__in HANDLE pid);
+void un_init_process_list();
+#endif 
 #endif
 

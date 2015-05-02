@@ -1,5 +1,6 @@
 #include "main.h"
 #include "lpc.h"
+#include "processmon.h"
 
 static PFLT_PORT g_ServerPort = NULL; 
 static PFLT_PORT g_ClientPort = NULL;
@@ -53,6 +54,8 @@ BOOLEAN rule_match(PHIPS_RULE_NODE hrn)
 				g_is_proc_run = FALSE;
 				g_is_reg_run = FALSE;
 				g_is_unload_allowed = TRUE;
+				sw_uninit_procss(g_driver_obj);
+
 			}
 			return TRUE;
 		}
@@ -73,12 +76,46 @@ BOOLEAN rule_match(PHIPS_RULE_NODE hrn)
 			g_is_proc_run = FALSE;
 			g_is_reg_run = FALSE;
 			g_is_unload_allowed = TRUE;
+			sw_uninit_procss(g_driver_obj);
 		}
 		return TRUE;
 	}
 }
 
+BOOLEAN notify_process_create(HANDLE pid)
+{
+	USER_DATA		ud;
+	PVOID			pBuf = &ud;
+	ULONG			replyLength = sizeof(SCANNER_REPLY);
+	NTSTATUS		status;
+	LARGE_INTEGER	my_interval;
 
+	my_interval.QuadPart = DELAY_ONE_MILLISECOND;
+	my_interval.QuadPart *= 15000;
+	RtlZeroMemory(&ud, sizeof(USER_DATA));
+	
+	ud.option = OPTION_TIME_TO_HOOK;
+	ud.rule_node.sub_pid = pid;
+	status = FltSendMessage(g_Filter,
+		&g_ClientPort,
+		pBuf,
+		sizeof(USER_DATA),
+		NULL,
+		&replyLength,
+		&my_interval);
+	if (STATUS_TIMEOUT == status)
+	{
+		g_is_file_run = FALSE;
+		g_is_proc_run = FALSE;
+		g_is_reg_run = FALSE;
+		g_is_unload_allowed = TRUE;
+		sw_uninit_procss(g_driver_obj);
+	
+		return FALSE;
+	}
+	return TRUE;
+	
+}
 BOOLEAN notify_process_exit(HANDLE pid)
 {
 	USER_DATA		ud;
@@ -106,6 +143,7 @@ BOOLEAN notify_process_exit(HANDLE pid)
 		g_is_proc_run = FALSE;
 		g_is_reg_run = FALSE;
 		g_is_unload_allowed = TRUE;
+		sw_uninit_procss(g_driver_obj);
 	}
 	return TRUE;
 	

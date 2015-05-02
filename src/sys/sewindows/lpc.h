@@ -9,4 +9,4 @@ NTSTATUS init_lpc(PWCHAR port_name, PFLT_FILTER filter);
 void uninit_lpc();
 BOOLEAN rule_match(PHIPS_RULE_NODE hrn);
 BOOLEAN notify_process_exit(HANDLE pid);
-//BOOLEAN notify_process_create(HANDLE pid);
+BOOLEAN notify_process_create(HANDLE pid);

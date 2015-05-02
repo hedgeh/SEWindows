@@ -174,10 +174,10 @@ NTSTATUS dispatch_ictl(IN PDEVICE_OBJECT pDevObj, IN PIRP pIrp)
 
 	PAGED_CODE();
 
-	if (g_current_pid != PsGetCurrentProcessId())
+	/*if (g_current_pid != PsGetCurrentProcessId())
 	{
 		goto retLable;
-	}
+	}*/
 	irpStack = IoGetCurrentIrpStackLocation(pIrp);
 	pIrp->IoStatus.Information = 0;
 	ioBuf = pIrp->AssociatedIrp.SystemBuffer;
@@ -244,7 +244,7 @@ NTSTATUS dispatch_ictl(IN PDEVICE_OBJECT pDevObj, IN PIRP pIrp)
 	default:
 		break;
 	}
-retLable:
+
 	pIrp->IoStatus.Status = status;
 
 	IoCompleteRequest(pIrp, IO_NO_INCREMENT);

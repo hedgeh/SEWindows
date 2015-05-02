@@ -46,7 +46,7 @@ typedef struct _HIPS_RULE_NODE
 {
 	UCHAR		major_type;
 	UCHAR		minor_type;
-	UCHAR		isDir;
+	UCHAR		is_dir;
 	HANDLE		sub_pid;
 	union
 	{
@@ -58,10 +58,10 @@ typedef struct _HIPS_RULE_NODE
 		FILE_BASIC_INFORMATION	fbi;
 		WCHAR		new_name[MAXPATHLEN];
 		WCHAR		key_value[MAXPATHLEN];
+		WCHAR		service_name[MAXPATHLEN];
 	};
 
 } HIPS_RULE_NODE, *PHIPS_RULE_NODE;
-
 typedef struct _USER_DATA
 {
 	UCHAR		option;
@@ -80,7 +80,8 @@ typedef struct _USER_DATA
 
 #define	OPTION_TO_JUGE		1
 #define	OPTION_TO_NOTIFY	2
-#define	OPTION_PROC_EXIT	3 
+#define	OPTION_PROC_EXIT	3
+#define	OPTION_TIME_TO_HOOK	4
 
 
 extern PATH_TABLE			g_path_table[26];

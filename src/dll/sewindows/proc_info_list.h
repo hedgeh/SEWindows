@@ -9,5 +9,6 @@ void	delete_entry_by_pid(DWORD pid);
 //void	add_entry_by_pid(DWORD pid);
 void	bulid_p2u_map();
 //BOOLEAN insert_to_procinfo_list(DWORD pid, const WCHAR* user_name,const WCHAR* proc_path);
-void	PrintBST1();
+BOOLEAN inject_dll_by_pid(DWORD pid);
+//void	PrintBST1();
 #endif

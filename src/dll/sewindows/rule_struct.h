@@ -7,10 +7,12 @@
 #define	PROC_OP		1
 #define	REG_OP		2
 #define	FILE_OP		3
+#define	SERVICE_OP	4
 
 #define	OPTION_TO_JUGE		1
 #define	OPTION_TO_NOTIFY	2
 #define	OPTION_PROC_EXIT	3
+#define	OPTION_TIME_TO_HOOK	4
 
 #define	FILE_READ_DATA_XX		1
 #define	FILE_WRITE_DATA_XX		2
@@ -46,6 +48,11 @@
 #define  OP_REG_LOAD						11 // 加载
 #define  OP_REG_UNLOAD						12 // 卸载
 
+#define  OP_SERVICE_CREATE					1 //创建服务
+#define  OP_SERVICE_DELETE					2 //删除服务
+#define  OP_SERVICE_CHANGE					3 //修改服务
+#define  OP_SERVICE_DRIVER					4 //加载驱动
+
 
 typedef struct _HIPS_RULE_NODE
 {
@@ -63,6 +70,7 @@ typedef struct _HIPS_RULE_NODE
 		FILE_BASIC_INFORMATION	fbi;
 		WCHAR		new_name[MAXPATHLEN];
 		WCHAR		key_value[MAXPATHLEN];
+		WCHAR		service_name[MAXPATHLEN];
 	};
 
 } HIPS_RULE_NODE, *PHIPS_RULE_NODE;

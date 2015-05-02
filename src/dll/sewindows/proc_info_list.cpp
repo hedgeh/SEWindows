@@ -16,6 +16,85 @@ typedef struct _process_info
 static READ_WRITE_LOCK	g_read_write_lock;
 static st_avl_tree		g_avl_p2u_list;
 
+BOOLEAN  InjectLibW(DWORD dwProcessId, PCWSTR pszLibFile) 
+{
+	BOOLEAN	bOk = FALSE;
+	HANDLE	hProcess = NULL;
+	HANDLE	hThread = NULL;
+	PWSTR	pszLibFileRemote = NULL;
+
+	__try {
+		hProcess = OpenProcess(
+			PROCESS_VM_READ|
+			PROCESS_QUERY_INFORMATION |   // Required by Alpha
+			PROCESS_CREATE_THREAD |   // For CreateRemoteThread
+			PROCESS_VM_OPERATION |   // For VirtualAllocEx/VirtualFreeEx
+			PROCESS_VM_WRITE,             // For WriteProcessMemory
+			FALSE, dwProcessId);
+		if (hProcess == NULL)
+		{
+			__leave;
+		}
+
+		int cch = 1 + lstrlenW(pszLibFile);
+		int cb = cch * sizeof(wchar_t);
+
+		pszLibFileRemote = (PWSTR)VirtualAllocEx(hProcess, NULL, cb, MEM_COMMIT, PAGE_READWRITE);
+		if (pszLibFileRemote == NULL)
+		{
+			__leave;
+		}
+
+		if (!WriteProcessMemory(hProcess, pszLibFileRemote,(PVOID)pszLibFile, cb, NULL))
+		{
+			__leave;
+		}
+		
+		PTHREAD_START_ROUTINE pfnThreadRtn = (PTHREAD_START_ROUTINE)GetProcAddress(GetModuleHandle(TEXT("Kernel32")), "LoadLibraryW");
+		if (pfnThreadRtn == NULL)
+		{
+			__leave;
+		}
+
+		hThread = CreateRemoteThread(hProcess, NULL, 0,pfnThreadRtn, pszLibFileRemote, 0, NULL);
+		if (hThread == NULL)
+		{
+			__leave;
+		}
+		WaitForSingleObject(hThread, INFINITE);
+
+		bOk = TRUE;
+	}
+	__finally { 
+
+		
+		if (pszLibFileRemote != NULL)
+		{
+			VirtualFreeEx(hProcess, pszLibFileRemote, 0, MEM_RELEASE);
+		}
+		if (hThread != NULL)
+		{
+			CloseHandle(hThread);
+		}
+
+		if (hProcess != NULL)
+		{
+			CloseHandle(hProcess);
+		}
+	}
+	return(bOk);
+}
+
+
+BOOLEAN inject_dll_by_pid(DWORD pid)
+{
+	TCHAR szLibFile[MAX_PATH];
+	GetModuleFileName(NULL, szLibFile, _countof(szLibFile));
+	PTSTR pFilename = _tcsrchr(szLibFile, TEXT('\\')) + 1;
+	_tcscpy_s(pFilename, _countof(szLibFile) - (pFilename - szLibFile),TEXT("monitor.dll"));
+	return InjectLibW(pid, szLibFile);
+}
+
 pprocess_info find_proc_info_by_pid(DWORD pid)
 {
 	process_info		info;
@@ -151,6 +230,7 @@ void bulid_p2u_map()
 	BOOL bRet = Process32First(procSnap,&procEntry);
 	while(bRet)
 	{
+		inject_dll_by_pid(procEntry.th32ProcessID);
 		if (get_proc_user_by_pid(procEntry.th32ProcessID, user_name) && get_proc_path_by_pid(procEntry.th32ProcessID,proc_path))
 		{
 			
@@ -176,10 +256,10 @@ BOOLEAN avl_tree_enum_callback
 	return TRUE;
 }
 
-void	PrintBST1()
-{
-	avl_tree_enum(&g_avl_p2u_list,tree_enum_order_in_order,avl_tree_enum_callback,NULL);
-}
+//void	PrintBST1()
+//{
+//	avl_tree_enum(&g_avl_p2u_list,tree_enum_order_in_order,avl_tree_enum_callback,NULL);
+//}
 
 void init_user_list()
 {

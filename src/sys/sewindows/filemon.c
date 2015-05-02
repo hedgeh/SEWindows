@@ -230,7 +230,7 @@ FLT_PREOP_CALLBACK_STATUS sw_pre_create_callback( PFLT_CALLBACK_DATA Data,PCFLT_
 		}
 	}
 	
-	cinf->isDir = IsDirectory;
+	cinf->is_dir = IsDirectory;
 
 	if (wcslen(cinf->des_path) <= wcslen(L"\\Device\\HarddiskVolume1\\"))
 	{
@@ -248,7 +248,7 @@ FLT_PREOP_CALLBACK_STATUS sw_pre_create_callback( PFLT_CALLBACK_DATA Data,PCFLT_
 		}
 	}
 
-	if ((OriginalDesiredAccess & FILE_READ_DATA) && cinf->isDir == FALSE)
+	if ((OriginalDesiredAccess & FILE_READ_DATA) && cinf->is_dir == FALSE)
 	{
 		cinf->minor_type = FILE_READ_DATA_XX;
 		if (rule_match(cinf) != TRUE)
@@ -405,10 +405,10 @@ FLT_POSTOP_CALLBACK_STATUS sw_post_create_callback( PFLT_CALLBACK_DATA Data, PCF
 	{
 		if (is_dir(tmpPath))
 		{
-			cinf->isDir = TRUE;
+			cinf->is_dir = TRUE;
 		}
 	}
-	cinf->isDir = IsDirectory;
+	cinf->is_dir = IsDirectory;
 	
 	if (wcslen(cinf->des_path) <= 3)
 	{
@@ -520,10 +520,10 @@ FLT_PREOP_CALLBACK_STATUS sw_pre_setinfo_callback( PFLT_CALLBACK_DATA Data, PCFL
 	{
 		if (is_dir(tmpPath))
 		{
-			cinf->isDir = TRUE;
+			cinf->is_dir = TRUE;
 		}
 	}
-	cinf->isDir = IsDirectory;
+	cinf->is_dir = IsDirectory;
 	if (Data->Iopb->Parameters.SetFileInformation.FileInformationClass == FileDispositionInformation)
 	{
 		if (((PFILE_DISPOSITION_INFORMATION)(Data->Iopb->Parameters.SetFileInformation.InfoBuffer))->DeleteFile == TRUE)
@@ -607,12 +607,21 @@ IN BOOLEAN  Create
 			g_is_proc_run = FALSE;
 			g_is_reg_run = FALSE;
 			g_is_unload_allowed = TRUE;
+
+#ifndef _WIN64
+#if (NTDDI_VERSION < NTDDI_VISTA)
 			sw_uninit_procss(g_driver_obj);
 			un_init_process_list();
+#endif 
+#endif 
 		}
 		else
 		{
+#ifndef _WIN64
+#if (NTDDI_VERSION < NTDDI_VISTA)
 			del_pid_from_list(ProcessId);
+#endif 
+#endif
 			notify_process_exit(ProcessId);
 		}
 	}

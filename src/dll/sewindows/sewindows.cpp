@@ -28,6 +28,12 @@ BOOLEAN notify_callback_func(Param& op)
 		return TRUE;
 	}
 
+	if (OPTION_TIME_TO_HOOK == op.opdata.option)
+	{
+		inject_dll_by_pid((DWORD)prule_node->sub_pid);
+		return TRUE;
+	}
+
 	switch (prule_node->major_type)
 	{
 	case PROC_OP:
@@ -216,6 +222,43 @@ BOOLEAN notify_callback_func(Param& op)
 			}
 			break;
 
+		default:
+			break;
+		}
+		break;
+	}
+	case SERVICE_OP:
+	{
+		switch (prule_node->minor_type)
+		{
+		case OP_SERVICE_CREATE:
+			if (g_sewin_operation.service_create)
+			{
+				get_proc_info_by_pid(prule_node->sub_pid, user_name, proc_path);
+				return g_sewin_operation.service_create(user_name, proc_path, prule_node->service_name, prule_node->des_path);
+			}
+			break;
+		case OP_SERVICE_DELETE:
+			if (g_sewin_operation.service_delete)
+			{
+				get_proc_info_by_pid(prule_node->sub_pid, user_name, proc_path);
+				return g_sewin_operation.service_delete(user_name, proc_path, prule_node->service_name);
+			}
+			break;
+		case OP_SERVICE_CHANGE:
+			if (g_sewin_operation.service_change)
+			{
+				get_proc_info_by_pid(prule_node->sub_pid, user_name, proc_path);
+				return g_sewin_operation.service_change(user_name, proc_path, prule_node->service_name);
+			}
+			break;
+		case OP_SERVICE_DRIVER:
+			if (g_sewin_operation.driver_load)
+			{
+				get_proc_info_by_pid(prule_node->sub_pid, user_name, proc_path);
+				return g_sewin_operation.driver_load(user_name, proc_path, prule_node->service_name, prule_node->des_path);
+			}
+			break;
 		default:
 			break;
 		}
