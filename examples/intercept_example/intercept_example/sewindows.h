@@ -61,8 +61,12 @@ struct sewin_operations {
     BOOLEAN(*process_write_mem)     (WCHAR *user_name, WCHAR *process, WCHAR *dst_proc);
     BOOLEAN(*process_set_mem_attr)  (WCHAR *user_name, WCHAR *process, WCHAR *dst_proc);
     BOOLEAN(*process_susresume)     (WCHAR *user_name, WCHAR *process, WCHAR *dst_proc);
+	BOOLEAN(*process_dup_handlle)   (WCHAR *user_name, WCHAR *process, WCHAR *dst_proc);
     BOOLEAN(*thread_susresume)      (WCHAR *user_name, WCHAR *process, WCHAR *dst_proc);
     BOOLEAN(*thread_kill)           (WCHAR *user_name, WCHAR *process, WCHAR *dst_proc);
+	BOOLEAN(*thread_set_context)    (WCHAR *user_name, WCHAR *process, WCHAR *dst_proc);
+	BOOLEAN(*thread_get_context)    (WCHAR *user_name, WCHAR *process, WCHAR *dst_proc);
+	
 
     // Registery operations
     BOOLEAN(*reg_read_key)          (WCHAR *user_name, WCHAR *process, WCHAR *reg_path);
@@ -75,7 +79,12 @@ struct sewin_operations {
     BOOLEAN(*reg_restore_key)       (WCHAR *user_name, WCHAR *process, WCHAR *reg_path);
     BOOLEAN(*reg_replace)           (WCHAR *user_name, WCHAR *process, WCHAR *reg_path);
     BOOLEAN(*reg_load_key)          (WCHAR *user_name, WCHAR *process, WCHAR *reg_path);
-    BOOLEAN(*reg_unload_key)        (WCHAR *user_name, WCHAR *process, WCHAR *reg_path);
+	BOOLEAN(*reg_unload_key)        (WCHAR *user_name, WCHAR *process, WCHAR *reg_path);
+
+	BOOLEAN(*service_create)        (WCHAR *user_name, WCHAR *process, WCHAR *service_name, WCHAR *bin_path);
+	BOOLEAN(*service_delete)        (WCHAR *user_name, WCHAR *process, WCHAR *service_name);
+	BOOLEAN(*service_change)        (WCHAR *user_name, WCHAR *process, WCHAR *service_name);
+	BOOLEAN(*driver_load)			(WCHAR *user_name, WCHAR *process, WCHAR *service_name, WCHAR *bin_path);
 };
 
 /**

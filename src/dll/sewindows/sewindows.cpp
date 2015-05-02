@@ -397,18 +397,18 @@ SEWINDOWS_API BOOLEAN sewin_init(void)
 	}
 	set_privilege(SE_DEBUG_NAME, TRUE);
 	g_str_altitude.Format(_T("%d"), top_altitude);
-	g_str_service_name.Format(_T("%08d"), top_altitude);
-	g_str_port_name.Format(_T("%08d"), top_altitude);
-	g_str_link_name.Format(_T("%08d"), top_altitude);
+	/*g_str_service_name.Format(_T("%08d"), 100);
+	g_str_port_name.Format(_T("%08d"), 100);
+	g_str_link_name.Format(_T("%08d"), 100);*/
 	g_str_path = get_module_path();
 	if (g_str_path.GetAt(g_str_path.GetLength()) != _T('\\'))
 	{
 		g_str_path += _T("\\");
 	}
 	g_str_path += DRIVERNAME;
-	g_str_service_name = SERVICENAME + g_str_service_name;
-	g_str_port_name = HIPSPORTNAME + g_str_port_name;
-	g_str_link_name = LINKNAME + g_str_link_name;
+	g_str_service_name = SERVICENAME ;
+	g_str_port_name = HIPSPORTNAME ;
+	g_str_link_name = LINKNAME ;
 	g_comm.SetNotify(notify_callback_func);
 	if (!g_comm.InitDriver(g_str_service_name.GetBuffer(), g_str_path.GetBuffer(), g_str_altitude.GetBuffer(), g_str_port_name.GetBuffer(), g_str_link_name.GetBuffer()))
 	{

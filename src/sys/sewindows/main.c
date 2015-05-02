@@ -2,6 +2,7 @@
 #include "filemon.h"
 #include "processmon.h"
 #include "regmon.h"
+#include "lpc.h"
 #include <Strsafe.h>
 
 PDEVICE_OBJECT              g_device_obj = NULL;
@@ -163,6 +164,26 @@ NTSTATUS dispatch_close(IN PDEVICE_OBJECT pDevObj, IN PIRP pIrp)
 	return status;
 }
 
+BOOLEAN get_from_r3msg(PVOID buf,ULONG ilen,ULONG olen)
+{
+	PHIPS_RULE_NODE phrn = NULL;
+	phrn = (PHIPS_RULE_NODE)buf;
+	if (!phrn || sizeof(HIPS_RULE_NODE) != ilen ||  sizeof(HIPS_RULE_NODE) != olen)
+	{
+		return FALSE;
+	}
+
+	if (rule_match(phrn))
+	{
+		phrn->is_dir = 1;
+	}
+	else
+	{
+		phrn->is_dir = 0;
+	}
+	return TRUE;
+}
+
 NTSTATUS dispatch_ictl(IN PDEVICE_OBJECT pDevObj, IN PIRP pIrp)
 {
 
@@ -214,6 +235,20 @@ NTSTATUS dispatch_ictl(IN PDEVICE_OBJECT pDevObj, IN PIRP pIrp)
 		break;
 	case IOCTL_PAUSE_REGMONITOR:
 		g_is_reg_run = FALSE;
+		break;
+	case IOCTL_FROM_R3MSG:
+		{
+			if (get_from_r3msg(ioBuf,inBufLength,outBufLength))
+			{
+				status = STATUS_SUCCESS;
+				pIrp->IoStatus.Information = inBufLength;
+			}
+			else
+			{
+				status = STATUS_UNSUCCESSFUL;
+				pIrp->IoStatus.Information = 0;
+			}
+		}
 		break;
 	case IOCTL_START_REGMONITOR:
 		g_is_reg_run = TRUE;

@@ -18,10 +18,10 @@
 #include <atlstr.h>
 #pragma comment(lib,"fltLib.lib")
 
-#define SERVICENAME		_T("sewindows")
-#define DRIVERNAME		_T("sewindows.sys")
-#define LINKNAME		_T("\\\\.\\sewindows") 
-#define HIPSPORTNAME	_T("\\sewindows")
+#define SERVICENAME		_T("xpsewindows")
+#define DRIVERNAME		_T("xpsewindows.sys")
+#define LINKNAME		_T("\\\\.\\xpsewindows") 
+#define HIPSPORTNAME	_T("\\xpsewindows")
 #define THREAD_COUNT	4 
 #define REQUEST_COUNT	4
 

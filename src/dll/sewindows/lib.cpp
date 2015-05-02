@@ -662,50 +662,50 @@ BOOLEAN get_long_file_name(const CString& sFilename, CString& sLongFilename)
 	return TRUE;
 }
 
-BOOLEAN delete_unprotected_sewin(const TCHAR* lpszServiceName)
-{
-	SC_HANDLE        schManager;
-	SC_HANDLE        schService;
-	SERVICE_STATUS    svcStatus;
-
-	TCHAR		szTempStr[MAX_PATH];
-	HKEY		hKey = NULL;
-	DWORD		dwData = 0;
-
-	_tcscpy_s(szTempStr, MAX_PATH, _T("SYSTEM\\CurrentControlSet\\Services\\"));
-	_tcscat_s(szTempStr, MAX_PATH, lpszServiceName);
-
-	if (RegCreateKeyEx(HKEY_LOCAL_MACHINE, szTempStr, 0, _T(""), REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS, NULL, &hKey, (LPDWORD)&dwData) != ERROR_SUCCESS)
-	{
-	//	printf("RegCreateKeyEx err\n");
-		return FALSE;
-	}
-
-	RegCloseKey(hKey);
-
-	schManager = OpenSCManager(NULL, NULL, SC_MANAGER_ALL_ACCESS);
-	if (NULL == schManager)
-	{
-		return FALSE;
-	}
-	schService = OpenService(schManager, lpszServiceName, SERVICE_ALL_ACCESS);
-	if (NULL == schService)
-	{
-		CloseServiceHandle(schManager);
-		return FALSE;
-	}
-	ControlService(schService, SERVICE_CONTROL_STOP, &svcStatus);
-
-	if (!DeleteService(schService))
-	{
-		CloseServiceHandle(schService);
-		CloseServiceHandle(schManager);
-		return FALSE;
-	}
-	CloseServiceHandle(schService);
-	CloseServiceHandle(schManager);
-	return TRUE;
-}
+//BOOLEAN delete_unprotected_sewin(const TCHAR* lpszServiceName)
+//{
+//	SC_HANDLE        schManager;
+//	SC_HANDLE        schService;
+//	SERVICE_STATUS    svcStatus;
+//
+//	TCHAR		szTempStr[MAX_PATH];
+//	HKEY		hKey = NULL;
+//	DWORD		dwData = 0;
+//
+//	_tcscpy_s(szTempStr, MAX_PATH, _T("SYSTEM\\CurrentControlSet\\Services\\"));
+//	_tcscat_s(szTempStr, MAX_PATH, lpszServiceName);
+//
+//	if (RegCreateKeyEx(HKEY_LOCAL_MACHINE, szTempStr, 0, _T(""), REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS, NULL, &hKey, (LPDWORD)&dwData) != ERROR_SUCCESS)
+//	{
+//	//	printf("RegCreateKeyEx err\n");
+//		return FALSE;
+//	}
+//
+//	RegCloseKey(hKey);
+//
+//	schManager = OpenSCManager(NULL, NULL, SC_MANAGER_ALL_ACCESS);
+//	if (NULL == schManager)
+//	{
+//		return FALSE;
+//	}
+//	schService = OpenService(schManager, lpszServiceName, SERVICE_ALL_ACCESS);
+//	if (NULL == schService)
+//	{
+//		CloseServiceHandle(schManager);
+//		return FALSE;
+//	}
+//	ControlService(schService, SERVICE_CONTROL_STOP, &svcStatus);
+//
+//	if (!DeleteService(schService))
+//	{
+//		CloseServiceHandle(schService);
+//		CloseServiceHandle(schManager);
+//		return FALSE;
+//	}
+//	CloseServiceHandle(schService);
+//	CloseServiceHandle(schManager);
+//	return TRUE;
+//}
 
 ULONG get_the_top_altitude()
 {
@@ -714,7 +714,7 @@ ULONG get_the_top_altitude()
 	HANDLE  handle;
 	PFILTER_AGGREGATE_BASIC_INFORMATION p_info = NULL;
 	TCHAR	sz_altitude[50];
-	TCHAR	sz_service_name[50];
+//	TCHAR	sz_service_name[50];
 	ULONG   altitude = 0;
 	HRESULT  ret = FilterFindFirst(FilterAggregateBasicInformation, buffer, sizeof(buffer), &len, &handle);
 	if (ret != S_OK)
@@ -727,12 +727,12 @@ ULONG get_the_top_altitude()
 		p_info = (PFILTER_AGGREGATE_BASIC_INFORMATION)buffer;
 		if (FLTFL_AGGREGATE_INFO_IS_MINIFILTER == p_info->Flags)
 		{
-			StringCbCopy(sz_altitude, p_info->Type.MiniFilter.FilterAltitudeLength + sizeof(TCHAR), (TCHAR*)((ULONG_PTR)buffer + p_info->Type.MiniFilter.FilterAltitudeBufferOffset));
+			/*StringCbCopy(sz_altitude, p_info->Type.MiniFilter.FilterAltitudeLength + sizeof(TCHAR), (TCHAR*)((ULONG_PTR)buffer + p_info->Type.MiniFilter.FilterAltitudeBufferOffset));
 			StringCbCopy(sz_service_name, p_info->Type.MiniFilter.FilterNameLength + sizeof(TCHAR), (TCHAR*)((ULONG_PTR)buffer + p_info->Type.MiniFilter.FilterNameBufferOffset));
 			if (_tcsnicmp(sz_service_name, _T("sewindows"), _tcslen(_T("sewindows"))) == 0)
 			{
 				delete_unprotected_sewin(sz_service_name);
-			}
+			}*/
 
 			altitude = max(_tcstoul(sz_altitude, NULL, 10), altitude);
 		}
