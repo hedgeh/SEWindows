@@ -15,6 +15,7 @@
 #define SEWIN_TYPE_FILE         0x1    // File      operations
 #define SEWIN_TYPE_PROC         0x2    // Process   operations
 #define SEWIN_TYPE_REG          0x4    // Registery operations
+#define SEWIN_TYPE_SCVDRV       0x8    // Registery operations
 
 // File (dir) Attribute
 typedef struct _FILE_BASIC_INFORMATION {

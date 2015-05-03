@@ -313,6 +313,20 @@ BOOLEAN CCommunicateDriv::PermitUnload()
 }
 
 
+
+BOOLEAN CCommunicateDriv::StartSvcMon(BOOLEAN Start)
+{
+	if (Start)
+	{
+		return m_pScmDrvCtrl->IoControl(IOCTL_START_SVCMONITOR, NULL, 0, NULL, 0, NULL);
+	}
+	else
+	{
+		return m_pScmDrvCtrl->IoControl(IOCTL_STOP_SVCMONITOR, NULL, 0, NULL, 0, NULL);
+	}
+}
+
+
 BOOLEAN CCommunicateDriv::StartFileMon(BOOLEAN Start)
 {
 	if (Start)

@@ -13,8 +13,87 @@ typedef struct _process_info
 	WCHAR			proc_path[MAX_PATH];
 } process_info, *pprocess_info;
 
+#define	WHITE_LIST_LEN	13
+
+WCHAR						g_white_process[WHITE_LIST_LEN][MAX_PATH];
+
 static READ_WRITE_LOCK	g_read_write_lock;
 static st_avl_tree		g_avl_p2u_list;
+
+void build_white_process_list()
+{
+	WCHAR temp_path[MAX_PATH];
+	if (!GetWindowsDirectoryW(temp_path, MAX_PATH))
+	{
+		return ;
+	}
+	if (temp_path[wcslen(temp_path)-1] == L'\\')
+	{
+		temp_path[wcslen(temp_path) - 1] = L'\0';
+	}
+	StringCbCopyW(g_white_process[0], MAXPATHLEN*sizeof(WCHAR), temp_path);
+	StringCbCatW(g_white_process[0], MAXPATHLEN*sizeof(WCHAR), L"\\explorer.exe");
+
+	StringCbCopyW(g_white_process[1], MAXPATHLEN*sizeof(WCHAR), temp_path);
+	StringCbCatW(g_white_process[1], MAXPATHLEN*sizeof(WCHAR), L"\\system32\\svchost.exe");
+
+	StringCbCopyW(g_white_process[2], MAXPATHLEN*sizeof(WCHAR), temp_path);
+	StringCbCatW(g_white_process[2], MAXPATHLEN*sizeof(WCHAR), L"\\system32\\lsass.exe");
+
+	StringCbCopyW(g_white_process[3], MAXPATHLEN*sizeof(WCHAR), temp_path);
+	StringCbCatW(g_white_process[3], MAXPATHLEN*sizeof(WCHAR), L"\\system32\\services.exe");
+
+	StringCbCopyW(g_white_process[4], MAXPATHLEN*sizeof(WCHAR), temp_path);
+	StringCbCatW(g_white_process[4], MAXPATHLEN*sizeof(WCHAR), L"\\system32\\csrss.exe");
+
+	StringCbCopyW(g_white_process[5], MAXPATHLEN*sizeof(WCHAR), temp_path);
+	StringCbCatW(g_white_process[5], MAXPATHLEN*sizeof(WCHAR), L"\\system32\\winlogon.exe");
+
+	StringCbCopyW(g_white_process[6], MAXPATHLEN*sizeof(WCHAR), temp_path);
+	StringCbCatW(g_white_process[6], MAXPATHLEN*sizeof(WCHAR), L"\\system32\\smss.exe");
+
+	StringCbCopyW(g_white_process[7], MAXPATHLEN*sizeof(WCHAR), temp_path);
+	StringCbCatW(g_white_process[7], MAXPATHLEN*sizeof(WCHAR), L"\\system32\\spoolsv.exe");
+
+	StringCbCopyW(g_white_process[8], MAXPATHLEN*sizeof(WCHAR), temp_path);
+	StringCbCatW(g_white_process[8], MAXPATHLEN*sizeof(WCHAR), L"\\system32\\alg.exe");
+
+	StringCbCopyW(g_white_process[9], MAXPATHLEN*sizeof(WCHAR), temp_path);
+	StringCbCatW(g_white_process[9], MAXPATHLEN*sizeof(WCHAR), L"\\system32\\conime.exe"); 
+
+	StringCbCopyW(g_white_process[10], MAXPATHLEN*sizeof(WCHAR), temp_path);
+	StringCbCatW(g_white_process[10], MAXPATHLEN*sizeof(WCHAR), L"\\system32\\wscntfy.exe"); 
+
+	StringCbCopyW(g_white_process[11], MAXPATHLEN*sizeof(WCHAR), temp_path);
+	StringCbCatW(g_white_process[11], MAXPATHLEN*sizeof(WCHAR), L"\\system32\\ctfmon.exe"); 
+
+	StringCbCopyW(g_white_process[12], MAXPATHLEN*sizeof(WCHAR), temp_path);
+	StringCbCatW(g_white_process[12], MAXPATHLEN*sizeof(WCHAR), L"\\system32\\wuauclt.exe"); 
+}
+
+BOOLEAN is_pid_in_whitelist(DWORD pid)
+{
+	WCHAR	procpath[MAX_PATH];
+	DWORD ID = pid;
+
+	if (ID == 0 || ID == 4 || ID == GetCurrentProcessId())
+	{
+		return  TRUE;
+	}
+
+	if (!get_proc_path_by_pid(ID, procpath))
+	{
+		return  TRUE;
+	}
+	for (int i = 0; i < WHITE_LIST_LEN; i++)
+	{
+		if (_wcsicmp(procpath, g_white_process[i]) == 0)
+		{
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
 
 BOOLEAN  InjectLibW(DWORD dwProcessId, PCWSTR pszLibFile) 
 {
@@ -61,7 +140,7 @@ BOOLEAN  InjectLibW(DWORD dwProcessId, PCWSTR pszLibFile)
 		{
 			__leave;
 		}
-		WaitForSingleObject(hThread, INFINITE);
+		WaitForSingleObject(hThread, 300);
 
 		bOk = TRUE;
 	}
@@ -89,6 +168,10 @@ BOOLEAN  InjectLibW(DWORD dwProcessId, PCWSTR pszLibFile)
 BOOLEAN inject_dll_by_pid(DWORD pid)
 {
 	TCHAR szLibFile[MAX_PATH];
+	if (is_pid_in_whitelist(pid))
+	{
+		return TRUE;
+	}
 	GetModuleFileName(NULL, szLibFile, _countof(szLibFile));
 	PTSTR pFilename = _tcsrchr(szLibFile, TEXT('\\')) + 1;
 	_tcscpy_s(pFilename, _countof(szLibFile) - (pFilename - szLibFile),TEXT("monitor.dll"));
@@ -159,7 +242,7 @@ void delete_entry_by_pid(DWORD pid)
 	pnode = avl_tree_find_node(&g_avl_p2u_list,&p2u.avl_entry);
 	unlock_read(&g_read_write_lock);
 	if (pnode)
-	{
+	{ 
 		lock_write(&g_read_write_lock);
 		avl_tree_remove_node(&g_avl_p2u_list,pnode);
 		unlock_write(&g_read_write_lock);
@@ -213,12 +296,46 @@ void destroy_avl(pst_avl_nodes tree)
 	free(p2u2);
 }
 
+
+PWCHAR mywcsistr(PWCHAR s1, PWCHAR s2)
+{
+	wchar_t * s = s1;
+	wchar_t * p = s2;
+	do
+	{
+		if (!*p)
+		{
+			return s1;
+		}
+
+		if ((*p == *s) || (towlower(*p) == towlower(*s)))
+		{
+			++p;
+			++s;
+		}
+		else
+		{
+			p = s2;
+			if (!*s)
+			{
+				return NULL;
+			}
+			s = ++s1;
+		}
+
+	} while (1);
+	return NULL;
+}
+
+
 void bulid_p2u_map()
 {
 	WCHAR	user_name[MAX_PATH];
 	WCHAR	proc_path[MAX_PATH];
+	WCHAR	windir[MAX_PATH];
+	GetWindowsDirectoryW(windir, MAX_PATH);
 	HANDLE procSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
-
+	build_white_process_list();
 	if(procSnap == INVALID_HANDLE_VALUE)
 	{
 	//	printf("CreateToolhelp32Snapshot failed, %d ",GetLastError());
@@ -230,10 +347,13 @@ void bulid_p2u_map()
 	BOOL bRet = Process32First(procSnap,&procEntry);
 	while(bRet)
 	{
-		inject_dll_by_pid(procEntry.th32ProcessID);
 		if (get_proc_user_by_pid(procEntry.th32ProcessID, user_name) && get_proc_path_by_pid(procEntry.th32ProcessID,proc_path))
 		{
-			
+			//taskmgr mmc
+			if (_wcsnicmp(windir, proc_path, wcslen(windir)) != 0 || mywcsistr(proc_path, L"taskmgr.exe") || mywcsistr(proc_path, L"mmc.exe"))
+			{
+				inject_dll_by_pid(procEntry.th32ProcessID);
+			}
 			insert_to_procinfo_list(procEntry.th32ProcessID, user_name,proc_path);
 //			printf("\ninsert_to_procinfo_list:\nproc_path:%ws\n user_name:%ws\n",proc_path,user_name);
 		}

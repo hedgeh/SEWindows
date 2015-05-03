@@ -416,6 +416,11 @@ SEWINDOWS_API BOOLEAN sewin_init(void)
 		g_bIsDriverInited = FALSE;
 		return FALSE;
 	}
+
+//#ifdef	DEBUG
+//	DebugBreak();
+//#endif
+
 	bulid_p2u_map();
 
 	if (!get_windows_directory(windows_directory))
@@ -489,14 +494,24 @@ SEWINDOWS_API BOOLEAN sewin_setoption(int mode, int type)
 	{
 		return bret;
 	}
+
+	if (type & SEWIN_TYPE_SCVDRV)
+	{
+		bret = g_comm.StartSvcMon(TRUE);
+	}
+	else
+	{
+		bret = g_comm.StartSvcMon(FALSE);
+	}
+	if (!bret)
+	{
+		return bret;
+	}
+
 	return TRUE;
 }
 SEWINDOWS_API BOOLEAN sewin_register_opt(struct sewin_operations *ops)
 {
-
-#ifdef	DEBUG
-	DebugBreak();
-#endif
 	if (ops == NULL)
 	{
 		return FALSE;

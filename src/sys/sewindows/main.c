@@ -11,6 +11,7 @@ HANDLE						g_current_pid = NULL;
 BOOLEAN						g_is_reg_run = FALSE;
 BOOLEAN						g_is_proc_run = FALSE;
 BOOLEAN						g_is_file_run = FALSE;
+BOOLEAN						g_is_svc_run = FALSE;
 PDRIVER_OBJECT				g_driver_obj = NULL;
 WCHAR						g_device_name[MAXNAMELEN];
 WCHAR						g_symbol_name[MAXNAMELEN];
@@ -173,6 +174,16 @@ BOOLEAN get_from_r3msg(PVOID buf,ULONG ilen,ULONG olen)
 		return FALSE;
 	}
 
+	if (phrn->major_type == PROC_OP && g_is_proc_run == FALSE)
+	{
+		return FALSE;
+	}
+
+	if (phrn->major_type == SERVICE_OP && g_is_svc_run == FALSE)
+	{
+		return FALSE;
+	}
+
 	if (rule_match(phrn))
 	{
 		phrn->is_dir = 1;
@@ -238,6 +249,7 @@ NTSTATUS dispatch_ictl(IN PDEVICE_OBJECT pDevObj, IN PIRP pIrp)
 		break;
 	case IOCTL_FROM_R3MSG:
 		{
+			
 			if (get_from_r3msg(ioBuf,inBufLength,outBufLength))
 			{
 				status = STATUS_SUCCESS;
@@ -248,7 +260,14 @@ NTSTATUS dispatch_ictl(IN PDEVICE_OBJECT pDevObj, IN PIRP pIrp)
 				status = STATUS_UNSUCCESSFUL;
 				pIrp->IoStatus.Information = 0;
 			}
+			
 		}
+		break;
+	case IOCTL_START_SVCMONITOR:
+		g_is_svc_run = TRUE;
+		break;
+	case IOCTL_STOP_SVCMONITOR:
+		g_is_svc_run = FALSE;
 		break;
 	case IOCTL_START_REGMONITOR:
 		g_is_reg_run = TRUE;

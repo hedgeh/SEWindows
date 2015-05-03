@@ -61,7 +61,7 @@ BOOLEAN get_windows_directory(WCHAR* windows_path)
 	}
 	if (temp_path[wcslen(temp_path) - 1] == L'\\')
 	{
-		temp_path[wcslen(temp_path) - 1] = L'0';
+		temp_path[wcslen(temp_path) - 1] = L'\0';
 	}
 	wcscpy_s(windows_path, MAX_PATH, temp_path);
 	return TRUE;
@@ -563,7 +563,11 @@ BOOLEAN get_proc_path_by_pid(DWORD pid, WCHAR* sz_proc_path)
 			bRet = get_proc_path_by_pid_xp(hProcess, tmp_path);
 		}
 	}
-	StringCbCopyW(sz_proc_path, MAX_PATH*sizeof(WCHAR), trans_file_path(tmp_path));
+	if (bRet)
+	{
+		StringCbCopyW(sz_proc_path, MAX_PATH*sizeof(WCHAR), trans_file_path(tmp_path));
+	}
+	
 	if (hProcess)
 	{
 		CloseHandle(hProcess);

@@ -1037,6 +1037,7 @@ NTSTATUS NTAPI fake_NtResumeThread(IN HANDLE ThreadHandle,OUT PULONG SuspendCoun
 		KeGetCurrentIrql() >= DISPATCH_LEVEL || 
 		PsGetCurrentProcessId() == (HANDLE)4 || 
 		PsGetCurrentProcessId() == (HANDLE)0 ||
+		g_is_svc_run == FALSE||
 		g_current_pid == PsGetCurrentProcessId()|| 
 		ThreadHandle == NULL)
 	{

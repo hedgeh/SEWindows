@@ -23,12 +23,28 @@ fsewin_init         monitor_sewin_init;
 fsewin_setoption    monitor_sewin_setoption;
 fsewin_register_opt monitor_sewin_register_opt;
 
-BOOLEAN  monitor_file_create(WCHAR *user_name, WCHAR *process, WCHAR *file_path)
+BOOLEAN  monitor_svc_change(WCHAR *user_name, WCHAR *process, WCHAR *file_path)
 {
-    wprintf(_T("User=%s, Process=%s, file=%s\n"), user_name, process, file_path);
+    wprintf(_T("monitor_svc_change User=%s, Process=%s, file=%s\n"), user_name, process, file_path);
     return TRUE;
 }
 
+BOOLEAN  monitor_svc_delete(WCHAR *user_name, WCHAR *process, WCHAR *file_path)
+{
+	wprintf(_T("monitor_svc_delete User=%s, Process=%s, file=%s\n"), user_name, process, file_path);
+	return TRUE;
+}
+
+BOOLEAN  monitor_svc_create(WCHAR *user_name, WCHAR *process, WCHAR *file_path, WCHAR *bin)
+{
+	wprintf(_T("monitor_svc_create User=%s, Process=%s, sername=%s\n, bin=%s\n"), user_name, process, file_path, bin);
+	return TRUE;
+}
+BOOLEAN  monitor_svc_driver(WCHAR *user_name, WCHAR *process, WCHAR *file_path, WCHAR *bin)
+{
+	wprintf(_T("monitor_svc_driver User=%s, Process=%s, driver=%s\n, bin=%s\n"), user_name, process, file_path, bin);
+	return TRUE;
+}
 int _tmain(int argc, TCHAR * argv[])
 {
     int   ret   = 0;
@@ -60,11 +76,14 @@ int _tmain(int argc, TCHAR * argv[])
 
     // step3. set options
     //monitor_sewin_setoption(SEWIN_MODE_INTERCEPT, SEWIN_TYPE_FILE|SEWIN_TYPE_PROC|SEWIN_TYPE_REG);
-    monitor_sewin_setoption(SEWIN_MODE_NOTIFY, SEWIN_TYPE_FILE);
+	monitor_sewin_setoption(SEWIN_MODE_NOTIFY, SEWIN_TYPE_SCVDRV);
     
     // step4. register callbak functions
     memset(&ops, 0x00, sizeof(struct sewin_operations));
-    ops.file_create = monitor_file_create;
+	ops.service_change = monitor_svc_change;
+	ops.service_delete = monitor_svc_delete;
+	ops.service_create = monitor_svc_create;
+	ops.driver_load = monitor_svc_driver;
     monitor_sewin_register_opt(&ops);
 
     printf("Start Working (Ctrl + 'C' to exists) ...\n");
