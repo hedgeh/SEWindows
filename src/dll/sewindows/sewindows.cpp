@@ -401,7 +401,7 @@ SEWINDOWS_API BOOLEAN sewin_init(void)
 	g_str_port_name.Format(_T("%08d"), 100);
 	g_str_link_name.Format(_T("%08d"), 100);*/
 	g_str_path = get_module_path();
-	if (g_str_path.GetAt(g_str_path.GetLength()) != _T('\\'))
+	if (g_str_path.GetAt(g_str_path.GetLength()-1) != _T('\\'))
 	{
 		g_str_path += _T("\\");
 	}

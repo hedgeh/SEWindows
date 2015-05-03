@@ -93,6 +93,7 @@ extern HANDLE				g_current_pid;
 extern BOOLEAN				g_is_reg_run;
 extern BOOLEAN				g_is_proc_run;
 extern BOOLEAN				g_is_file_run;
+extern BOOLEAN				g_is_svc_run;
 extern PDRIVER_OBJECT		g_driver_obj;
 extern PDEVICE_OBJECT		g_device_obj;
 extern WCHAR				g_port_name[MAXNAMELEN];

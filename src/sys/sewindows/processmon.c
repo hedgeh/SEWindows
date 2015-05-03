@@ -488,13 +488,7 @@ void un_init_process_list()
 {
 	PLIST_ENTRY		Flink;
 	PPROCESS_NODE	pdev_list_entry;
-	static	BOOLEAN bUnInit = FALSE;
-
-	if (bUnInit)
-	{
-		return;
-	}
-	bUnInit = TRUE;
+	
 	AcquireResourceExclusive( &g_process_list.lock );
 	
 	if ( IsListEmpty( &g_process_list.list_head ) )
@@ -667,10 +661,14 @@ NTSTATUS (NTAPI *real_NtResumeThread)(IN HANDLE ThreadHandle,OUT PULONG SuspendC
 
 
 static PVOID	g_BaseOfNtDllDll = 0;
+
 static ULONG	g_NtTerminateProcess_index = MAXULONG;
 static ULONG	g_NtCreateThread_index = MAXULONG;
 static ULONG	g_NtResumeThread_index = MAXULONG;
 
+static ULONG	g_NtTerminateProcess_count = 0;
+static ULONG	g_NtCreateThread_count = 0;
+static ULONG	g_NtResumeThread_count = 0;
 
 ULONG CheckException ()
 {
@@ -883,6 +881,7 @@ ULONG GetNativeID (__in PVOID NativeBase,__in PSTR NativeName)
 	return 0;
 }
 
+
 NTSTATUS
 __stdcall
 fake_NtTerminateProcess ( __in HANDLE ProcessHandle, __in ULONG ProcessExitCode )
@@ -891,6 +890,7 @@ fake_NtTerminateProcess ( __in HANDLE ProcessHandle, __in ULONG ProcessExitCode 
 	HIPS_RULE_NODE	Pi;
 	HANDLE			hDestProcessId;
 
+	InterlockedIncrement(&g_NtTerminateProcess_count);
 	if (ExGetPreviousMode() == KernelMode || 
 		KeGetCurrentIrql() >= DISPATCH_LEVEL || 
 		g_is_proc_run == FALSE ||
@@ -900,16 +900,19 @@ fake_NtTerminateProcess ( __in HANDLE ProcessHandle, __in ULONG ProcessExitCode 
 		ProcessHandle == UlongToHandle(-1)
 		)
 	{
+		InterlockedDecrement(&g_NtTerminateProcess_count);
 		return real_NtTerminateProcess( ProcessHandle, ProcessExitCode );
 	}
 
 	if (is_process_in_white_list(PsGetCurrentProcessId()))
 	{
+		InterlockedDecrement(&g_NtTerminateProcess_count);
 		return real_NtTerminateProcess( ProcessHandle, ProcessExitCode );
 	}
 
 	if (!NT_SUCCESS( Sys_GetProcessIdByHandle( ProcessHandle, &hDestProcessId ) ))
 	{
+		InterlockedDecrement(&g_NtTerminateProcess_count);
 		return real_NtTerminateProcess( ProcessHandle, ProcessExitCode );
 	}
 
@@ -921,10 +924,12 @@ fake_NtTerminateProcess ( __in HANDLE ProcessHandle, __in ULONG ProcessExitCode 
 
 	if (rule_match(&Pi) == FALSE)
 	{
+		InterlockedDecrement(&g_NtTerminateProcess_count);
 		return STATUS_ACCESS_DENIED;
 	}
 	else
 	{
+		InterlockedDecrement(&g_NtTerminateProcess_count);
 		return real_NtTerminateProcess( ProcessHandle, ProcessExitCode );
 	}
 }
@@ -947,6 +952,7 @@ fake_NtCreateThread (
 	HIPS_RULE_NODE	Pi;
 	HANDLE			hDestProcessId;
 
+	InterlockedIncrement(&g_NtCreateThread_count);
 	if (ExGetPreviousMode() == KernelMode || 
 		KeGetCurrentIrql() >= DISPATCH_LEVEL || 
 		g_is_proc_run == FALSE ||
@@ -957,11 +963,13 @@ fake_NtCreateThread (
 		ProcessHandle == 0
 		)
 	{
+		InterlockedDecrement(&g_NtCreateThread_count);
 		return real_NtCreateThread( ThreadHandle, DesiredAccess, ObjectAttributes, ProcessHandle, ClientID, Context, StackInfo, CreateSuspended );
 	}
 
 	if (is_process_in_white_list(PsGetCurrentProcessId()))
 	{
+		InterlockedDecrement(&g_NtCreateThread_count);
 		return real_NtCreateThread( ThreadHandle, DesiredAccess, ObjectAttributes, ProcessHandle, ClientID, Context, StackInfo, CreateSuspended );
 	}
 
@@ -972,6 +980,7 @@ fake_NtCreateThread (
 
 	if (PsGetCurrentProcessId() == hDestProcessId)
 	{
+		InterlockedDecrement(&g_NtCreateThread_count);
 		return real_NtCreateThread( ThreadHandle, DesiredAccess, ObjectAttributes, ProcessHandle, ClientID, Context, StackInfo, CreateSuspended );
 	}
 
@@ -983,10 +992,12 @@ fake_NtCreateThread (
 
 	if (rule_match(&Pi) == FALSE)
 	{
+		InterlockedDecrement(&g_NtCreateThread_count);
 		return STATUS_ACCESS_DENIED;
 	}
 	else
 	{
+		InterlockedDecrement(&g_NtCreateThread_count);
 		return real_NtCreateThread( ThreadHandle, DesiredAccess, ObjectAttributes, ProcessHandle, ClientID, Context, StackInfo, CreateSuspended );
 	}
 }
@@ -1018,7 +1029,7 @@ BOOLEAN enum_system_process()
 		do 
 		{   
 			insert_pid_to_list(process->UniqueProcessId);
-			DbgPrint("%wZ\n",&process->ImageName);
+			//DbgPrint("%wZ\n",&process->ImageName);
 			process = (PSYSTEM_PROCESS_INFORMATION)((ULONG_PTR)process +process->NextEntryOffset );  
 		}while ( process->NextEntryOffset != 0 );
 	}
@@ -1033,31 +1044,36 @@ NTSTATUS NTAPI fake_NtResumeThread(IN HANDLE ThreadHandle,OUT PULONG SuspendCoun
 	HANDLE			target_pid = NULL;
 	THREAD_BASIC_INFORMATION tbi;
 	
+	InterlockedIncrement(&g_NtResumeThread_count);
+
 	if (ExGetPreviousMode() == KernelMode || 
 		KeGetCurrentIrql() >= DISPATCH_LEVEL || 
 		PsGetCurrentProcessId() == (HANDLE)4 || 
 		PsGetCurrentProcessId() == (HANDLE)0 ||
-		g_is_svc_run == FALSE||
 		g_current_pid == PsGetCurrentProcessId()|| 
 		ThreadHandle == NULL)
 	{
+		InterlockedDecrement(&g_NtResumeThread_count);
 		return real_NtResumeThread(ThreadHandle,SuspendCount);
 	}
 
 	status = g_zwQueryInformationThread(ThreadHandle,ThreadBasicInformation,&tbi,sizeof(tbi),NULL);
 	if ( ! NT_SUCCESS(status) )
 	{
+		InterlockedDecrement(&g_NtResumeThread_count);
 		return real_NtResumeThread(ThreadHandle,SuspendCount);
 	}
 
 	if (tbi.ClientId.UniqueProcess == PsGetCurrentProcessId())
 	{
+		InterlockedDecrement(&g_NtResumeThread_count);
 		return real_NtResumeThread(ThreadHandle,SuspendCount);
 	}
 
 
 	if(is_pid_in_list(tbi.ClientId.UniqueProcess))
 	{
+		InterlockedDecrement(&g_NtResumeThread_count);
 		return real_NtResumeThread(ThreadHandle,SuspendCount);
 	}
 
@@ -1076,6 +1092,7 @@ NTSTATUS NTAPI fake_NtResumeThread(IN HANDLE ThreadHandle,OUT PULONG SuspendCoun
 
 	//get_proc_name_by_pid(target_pid,parent_proc);
 	//DbgPrint("sub: %S\n",parent_proc);
+	InterlockedDecrement(&g_NtResumeThread_count);
 	return real_NtResumeThread(ThreadHandle,SuspendCount);
 }
 
@@ -1162,6 +1179,16 @@ UnHookNtFunc (
 	}
 }
 
+static VOID
+SleepImp (
+	__int64 ReqInterval
+	)
+{
+	LARGE_INTEGER	Interval;
+	*(__int64*)&Interval=-(ReqInterval*10000000L);
+	KeDelayExecutionThread( KernelMode, FALSE, &Interval );
+}
+
 NTSTATUS sw_init_procss(PDRIVER_OBJECT pDriverObj)
 {
 	NTSTATUS					Status = STATUS_SUCCESS;
@@ -1180,15 +1207,20 @@ NTSTATUS sw_init_procss(PDRIVER_OBJECT pDriverObj)
 	
 	if (!enum_system_process())
 	{
+		while (g_NtTerminateProcess_count);
 		UnHookNtFunc(g_NtTerminateProcess_index,(ULONG)real_NtTerminateProcess);
 		g_NtTerminateProcess_index = MAXULONG;
 	
+		while (g_NtCreateThread_count);
 		UnHookNtFunc(g_NtCreateThread_index,(ULONG)real_NtCreateThread);
 		g_NtCreateThread_index = MAXULONG;
 
+		while (g_NtResumeThread_count);
 		UnHookNtFunc(g_NtResumeThread_index,(ULONG)real_NtResumeThread);
 		g_NtResumeThread_index = MAXULONG;
 		un_init_process_list();
+
+		SleepImp(1);
 		Status = STATUS_UNSUCCESSFUL;
 	}
 	return Status;
@@ -1198,16 +1230,28 @@ NTSTATUS sw_init_procss(PDRIVER_OBJECT pDriverObj)
 NTSTATUS sw_uninit_procss(PDRIVER_OBJECT pDriverObj)
 {
 	NTSTATUS Status = STATUS_SUCCESS;
+	static	BOOLEAN bUnInit = FALSE;
 
+	if (bUnInit)
+	{
+		return TRUE;
+	}
+	bUnInit = TRUE;
+
+	while (g_NtTerminateProcess_count);
 	UnHookNtFunc(g_NtTerminateProcess_index,(ULONG)real_NtTerminateProcess);
 	g_NtTerminateProcess_index = MAXULONG;
 	
+	while (g_NtCreateThread_count);
 	UnHookNtFunc(g_NtCreateThread_index,(ULONG)real_NtCreateThread);
 	g_NtCreateThread_index = MAXULONG;
 
+	while (g_NtResumeThread_count);
 	UnHookNtFunc(g_NtResumeThread_index,(ULONG)real_NtResumeThread);
 	g_NtResumeThread_index = MAXULONG;
 	un_init_process_list();
+
+	SleepImp(1);
 	return Status;
 }
 

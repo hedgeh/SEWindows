@@ -167,15 +167,18 @@ BOOLEAN  InjectLibW(DWORD dwProcessId, PCWSTR pszLibFile)
 
 BOOLEAN inject_dll_by_pid(DWORD pid)
 {
-	TCHAR szLibFile[MAX_PATH];
 	if (is_pid_in_whitelist(pid))
 	{
 		return TRUE;
 	}
-	GetModuleFileName(NULL, szLibFile, _countof(szLibFile));
-	PTSTR pFilename = _tcsrchr(szLibFile, TEXT('\\')) + 1;
-	_tcscpy_s(pFilename, _countof(szLibFile) - (pFilename - szLibFile),TEXT("monitor.dll"));
-	return InjectLibW(pid, szLibFile);
+
+	CString path = get_module_path();
+	if (path.GetAt(path.GetLength()-1) != _T('\\'))
+	{
+		path += _T("\\");
+	}
+	path += MONDLLNAME;
+	return InjectLibW(pid, path);
 }
 
 pprocess_info find_proc_info_by_pid(DWORD pid)
@@ -349,7 +352,6 @@ void bulid_p2u_map()
 	{
 		if (get_proc_user_by_pid(procEntry.th32ProcessID, user_name) && get_proc_path_by_pid(procEntry.th32ProcessID,proc_path))
 		{
-			//taskmgr mmc
 			if (_wcsnicmp(windir, proc_path, wcslen(windir)) != 0 || mywcsistr(proc_path, L"taskmgr.exe") || mywcsistr(proc_path, L"mmc.exe"))
 			{
 				inject_dll_by_pid(procEntry.th32ProcessID);

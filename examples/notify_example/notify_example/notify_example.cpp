@@ -25,25 +25,31 @@ fsewin_register_opt monitor_sewin_register_opt;
 
 BOOLEAN  monitor_svc_change(WCHAR *user_name, WCHAR *process, WCHAR *file_path)
 {
-    wprintf(_T("monitor_svc_change User=%s, Process=%s, file=%s\n"), user_name, process, file_path);
-    return TRUE;
+    wprintf(_T("monitor_svc_change\n User=%s, Process=%s, file=%s\n"), user_name, process, file_path);
+    return FALSE;
 }
 
 BOOLEAN  monitor_svc_delete(WCHAR *user_name, WCHAR *process, WCHAR *file_path)
 {
-	wprintf(_T("monitor_svc_delete User=%s, Process=%s, file=%s\n"), user_name, process, file_path);
-	return TRUE;
+	wprintf(_T("monitor_svc_delete\n  User=%s, Process=%s, file=%s\n"), user_name, process, file_path);
+	return FALSE;
+}
+
+BOOLEAN  monitorprocess_kill(WCHAR *user_name, WCHAR *process, WCHAR *file_path)
+{
+	wprintf(_T("monitor_svc_delete\n  User=%s, Process=%s, file=%s\n"), user_name, process, file_path);
+	return FALSE;
 }
 
 BOOLEAN  monitor_svc_create(WCHAR *user_name, WCHAR *process, WCHAR *file_path, WCHAR *bin)
 {
-	wprintf(_T("monitor_svc_create User=%s, Process=%s, sername=%s\n, bin=%s\n"), user_name, process, file_path, bin);
-	return TRUE;
+	wprintf(_T("monitor_svc_create \n User=%s, Process=%s, sername=%s\n, bin=%s\n"), user_name, process, file_path, bin);
+	return FALSE;
 }
 BOOLEAN  monitor_svc_driver(WCHAR *user_name, WCHAR *process, WCHAR *file_path, WCHAR *bin)
 {
-	wprintf(_T("monitor_svc_driver User=%s, Process=%s, driver=%s\n, bin=%s\n"), user_name, process, file_path, bin);
-	return TRUE;
+	wprintf(_T("monitor_svc_driver\n  User=%s, Process=%s, driver=%s\n, bin=%s\n"), user_name, process, file_path, bin);
+	return FALSE;
 }
 int _tmain(int argc, TCHAR * argv[])
 {
@@ -76,7 +82,7 @@ int _tmain(int argc, TCHAR * argv[])
 
     // step3. set options
     //monitor_sewin_setoption(SEWIN_MODE_INTERCEPT, SEWIN_TYPE_FILE|SEWIN_TYPE_PROC|SEWIN_TYPE_REG);
-	monitor_sewin_setoption(SEWIN_MODE_NOTIFY, SEWIN_TYPE_SCVDRV);
+	monitor_sewin_setoption(SEWIN_MODE_INTERCEPT, SEWIN_TYPE_SCVDRV | SEWIN_TYPE_FILE | SEWIN_TYPE_PROC | SEWIN_TYPE_REG);
     
     // step4. register callbak functions
     memset(&ops, 0x00, sizeof(struct sewin_operations));
@@ -84,6 +90,8 @@ int _tmain(int argc, TCHAR * argv[])
 	ops.service_delete = monitor_svc_delete;
 	ops.service_create = monitor_svc_create;
 	ops.driver_load = monitor_svc_driver;
+
+	ops.process_kill = monitorprocess_kill;
     monitor_sewin_register_opt(&ops);
 
     printf("Start Working (Ctrl + 'C' to exists) ...\n");

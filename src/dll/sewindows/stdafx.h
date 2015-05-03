@@ -15,11 +15,12 @@
 #include <tchar.h>
 #include <Fltuser.h>
 #include <strsafe.h>
-#include <atlstr.h>
+#include <atlstr.h> 
 #pragma comment(lib,"fltLib.lib")
 
 #define SERVICENAME		_T("xpsewindows")
 #define DRIVERNAME		_T("xpsewindows.sys")
+#define MONDLLNAME		_T("monitor.dll")
 #define LINKNAME		_T("\\\\.\\xpsewindows") 
 #define HIPSPORTNAME	_T("\\xpsewindows")
 #define THREAD_COUNT	4 

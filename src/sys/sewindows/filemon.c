@@ -1,6 +1,7 @@
 #include "main.h"
 #include "filemon.h"
 #include <strsafe.h>
+#include <Ntdddisk.h>
 #include "lpc.h"
 #include "processmon.h"
 #include "regmon.h"
@@ -26,9 +27,115 @@ CONST FLT_OPERATION_REGISTRATION g_callbacks[] =
 	FLTFL_OPERATION_REGISTRATION_SKIP_PAGING_IO | FLTFL_OPERATION_REGISTRATION_SKIP_CACHED_IO,
 	(PFLT_PRE_OPERATION_CALLBACK)sw_pre_setinfo_callback,
 	NULL},
+
+	{ IRP_MJ_DEVICE_CONTROL,
+	FLTFL_OPERATION_REGISTRATION_SKIP_PAGING_IO | FLTFL_OPERATION_REGISTRATION_SKIP_CACHED_IO,
+	(PFLT_PRE_OPERATION_CALLBACK)sw_pre_diskctl_callback,
+	NULL},
+
 	{ IRP_MJ_OPERATION_END }
 };
 
+
+
+FLT_PREOP_CALLBACK_STATUS
+sw_pre_diskctl_callback (
+    __inout PFLT_CALLBACK_DATA Data,
+    __in PCFLT_RELATED_OBJECTS FltObjects,
+    __deref_out_opt PVOID *CompletionContext
+    )
+{
+    NTSTATUS	status;
+	ULONG		io_ctl_code = 0;
+
+	UNREFERENCED_PARAMETER( FltObjects );
+    UNREFERENCED_PARAMETER( CompletionContext );
+	
+	if (ExGetPreviousMode() == KernelMode)
+	{
+		return FLT_PREOP_SUCCESS_NO_CALLBACK;
+	}
+
+	if ((PsGetCurrentProcessId() == (HANDLE)4) || (PsGetCurrentProcessId() == (HANDLE)0) || g_is_file_run == FALSE)
+	{
+		return FLT_PREOP_SUCCESS_NO_CALLBACK;
+	}
+	if (KeGetCurrentIrql() >= DISPATCH_LEVEL)
+	{
+		return FLT_PREOP_SUCCESS_NO_CALLBACK;
+	}
+
+	io_ctl_code = Data->Iopb->Parameters.DeviceIoControl.Common.IoControlCode;
+
+	switch (io_ctl_code)
+	{
+	case IOCTL_DISK_GET_DRIVE_GEOMETRY:
+		KdPrint(("IOCTL_DISK_GET_DRIVE_GEOMETRY"));
+		break;
+	case IOCTL_DISK_GET_PARTITION_INFO:
+		KdPrint(("IOCTL_DISK_GET_PARTITION_INFO"));
+		break;
+	case IOCTL_DISK_SET_PARTITION_INFO:
+		KdPrint(("IOCTL_DISK_SET_PARTITION_INFO"));
+		break;
+	case IOCTL_DISK_GET_DRIVE_LAYOUT:
+
+		KdPrint(("IOCTL_DISK_GET_DRIVE_LAYOUT"));
+		break;
+	case IOCTL_DISK_SET_DRIVE_LAYOUT:
+		KdPrint(("IOCTL_DISK_SET_DRIVE_LAYOUT"));
+		break;
+	case IOCTL_DISK_VERIFY:
+		KdPrint(("IOCTL_DISK_VERIFY"));
+		break;
+	case IOCTL_DISK_FORMAT_TRACKS:
+		KdPrint(("IOCTL_DISK_FORMAT_TRACKS"));
+		break;
+	case IOCTL_DISK_REASSIGN_BLOCKS:
+		KdPrint(("IOCTL_DISK_REASSIGN_BLOCKS"));
+		break;
+	case IOCTL_DISK_PERFORMANCE:
+		KdPrint(("IOCTL_DISK_PERFORMANCE"));
+		break;
+	case IOCTL_DISK_IS_WRITABLE:
+		KdPrint(("IOCTL_DISK_IS_WRITABLE"));
+		break;
+	case IOCTL_DISK_LOGGING:
+		KdPrint(("IOCTL_DISK_LOGGING"));
+		break;
+
+	case IOCTL_DISK_FORMAT_TRACKS_EX:
+		KdPrint(("IOCTL_DISK_FORMAT_TRACKS_EX"));
+		break;
+
+	case IOCTL_DISK_HISTOGRAM_STRUCTURE:
+		KdPrint(("IOCTL_DISK_HISTOGRAM_STRUCTURE"));
+		break;
+
+	case IOCTL_DISK_HISTOGRAM_DATA:
+		KdPrint(("IOCTL_DISK_HISTOGRAM_DATA"));
+		break;
+
+	case IOCTL_DISK_HISTOGRAM_RESET:
+		KdPrint(("IOCTL_DISK_HISTOGRAM_RESET"));
+		break;
+
+	case IOCTL_DISK_REQUEST_STRUCTURE:
+		KdPrint(("IOCTL_DISK_REQUEST_STRUCTURE"));
+		break;
+
+	case IOCTL_DISK_REQUEST_DATA:
+		KdPrint(("IOCTL_DISK_REQUEST_DATA"));
+		break;
+	case IOCTL_DISK_PERFORMANCE_OFF:
+		KdPrint(("IOCTL_DISK_PERFORMANCE_OFF"));
+		break;
+	default:
+		break;
+	}
+
+    return FLT_PREOP_SUCCESS_NO_CALLBACK;
+}
 
 CONST FLT_REGISTRATION g_FilterRegistration = {
 
@@ -70,15 +177,6 @@ sw_InstanceSetup (
 	return STATUS_SUCCESS;
 }
 
-static VOID
-SleepImp (
-	__int64 ReqInterval
-	)
-{
-	LARGE_INTEGER	Interval;
-	*(__int64*)&Interval=-(ReqInterval*10000000L);
-	KeDelayExecutionThread( KernelMode, FALSE, &Interval );
-}
 
 
 NTSTATUS sw_unload(FLT_FILTER_UNLOAD_FLAGS Flags)
@@ -93,10 +191,11 @@ NTSTATUS sw_unload(FLT_FILTER_UNLOAD_FLAGS Flags)
 	g_is_file_run = FALSE;
 	g_is_proc_run = FALSE;
 	g_is_reg_run = FALSE;
+	g_is_svc_run = FALSE;
 	sw_uninit_minifliter(g_driver_obj);
 //	SleepImp(3);
 //	sw_uninit_procss(g_driver_obj);
-	SleepImp(1);
+//	SleepImp(1);
 	sw_register_uninit(g_driver_obj);
 	
 
@@ -168,6 +267,19 @@ FLT_PREOP_CALLBACK_STATUS sw_pre_create_callback( PFLT_CALLBACK_DATA Data,PCFLT_
 
 	if (FlagOn(Data->Iopb->TargetFileObject->Flags, FO_VOLUME_OPEN) || FlagOn(Data->Iopb->TargetFileObject->Flags, FO_NAMED_PIPE) || FlagOn(Data->Iopb->TargetFileObject->Flags, FO_MAILSLOT))
 	{
+		{
+			NTSTATUS s;
+			PFLT_FILE_NAME_INFORMATION	n = NULL;
+
+			s = FltGetFileNameInformation(Data, FLT_FILE_NAME_OPENED |FLT_FILE_NAME_QUERY_ALWAYS_ALLOW_CACHE_LOOKUP, &n);
+
+			if (NT_SUCCESS(s))
+			{
+				KdPrint(("%wZ\n",&n->Name));
+				FltReleaseFileNameInformation(n);
+			}
+		}
+		
 		return FLT_PREOP_SUCCESS_NO_CALLBACK;
 	}
 
@@ -606,12 +718,12 @@ IN BOOLEAN  Create
 			g_is_file_run = FALSE;
 			g_is_proc_run = FALSE;
 			g_is_reg_run = FALSE;
+			g_is_svc_run = FALSE;
 			g_is_unload_allowed = TRUE;
 
 #ifndef _WIN64
 #if (NTDDI_VERSION < NTDDI_VISTA)
 			sw_uninit_procss(g_driver_obj);
-			un_init_process_list();
 #endif 
 #endif 
 		}

@@ -238,11 +238,13 @@ NTSTATUS dispatch_ictl(IN PDEVICE_OBJECT pDevObj, IN PIRP pIrp)
 		g_is_reg_run = FALSE;
 		g_is_proc_run = FALSE;
 		g_is_file_run = FALSE;
+		g_is_svc_run = FALSE;
 		break;
 	case IOCTL_START_ALL:
 		g_is_reg_run = TRUE;
 		g_is_proc_run = TRUE;
 		g_is_file_run = TRUE;
+		g_is_svc_run = TRUE;
 		break;
 	case IOCTL_PAUSE_REGMONITOR:
 		g_is_reg_run = FALSE;
@@ -312,6 +314,7 @@ NTSTATUS dispatch_shutdown(PDEVICE_OBJECT DeviceObject, PIRP Irp)
 	g_is_file_run = FALSE;
 	g_is_proc_run = FALSE;
 	g_is_reg_run = FALSE;
+	g_is_svc_run = FALSE;
 
 	sw_register_uninit(g_driver_obj);
 	sw_uninit_minifliter(g_driver_obj);
@@ -335,6 +338,7 @@ VOID driver_unload(PDRIVER_OBJECT DriverObject)
 	g_is_file_run = FALSE;
 	g_is_proc_run = FALSE;
 	g_is_reg_run = FALSE;
+	g_is_svc_run = FALSE;
 
 	sw_uninit_minifliter(g_driver_obj);
 //	SleepImp(3);
@@ -526,7 +530,7 @@ err_ret:
 	g_is_reg_run = FALSE;
 	g_is_file_run = FALSE;
 	g_is_proc_run = FALSE;
-
+	g_is_svc_run = FALSE;
 	if (bNeedToUnregShutdown)
 	{
 		IoUnregisterShutdownNotification(g_device_obj);
