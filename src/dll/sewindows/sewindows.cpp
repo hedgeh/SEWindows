@@ -30,7 +30,7 @@ BOOLEAN notify_callback_func(Param& op)
 
 	if (OPTION_TIME_TO_HOOK == op.opdata.option)
 	{
-		inject_dll_by_pid((DWORD)prule_node->sub_pid);
+		inject_dll_by_pid((DWORD)prule_node->sub_pid,TRUE);
 		return TRUE;
 	}
 
@@ -428,6 +428,22 @@ SEWINDOWS_API BOOLEAN sewin_init(void)
 		return FALSE;
 	}
 	if (!g_comm.TransferSysroot(windows_directory))
+	{
+		return FALSE;
+	}//IOCTL_TRANSFER_INJECT_DLL
+
+	if (!get_windows_directory(windows_directory))
+	{
+		return FALSE;
+	}
+	CString path = get_module_path();
+	if (path.GetAt(path.GetLength() - 1) != _T('\\'))
+	{
+		path += _T("\\");
+	}
+	path += MONDLLNAME;
+
+	if (!g_comm.TransferInjectDll(path.GetBuffer()))
 	{
 		return FALSE;
 	}

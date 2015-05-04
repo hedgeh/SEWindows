@@ -25,6 +25,7 @@
 #define IOCTL_REMOVE_HOOK			CTL_CODE(FILE_DEVICE_UNKNOWN, 0x1014, METHOD_BUFFERED, FILE_ANY_ACCESS) 
 #define IOCTL_START_SVCMONITOR		CTL_CODE(FILE_DEVICE_UNKNOWN, 0x1015, METHOD_BUFFERED, FILE_ANY_ACCESS)
 #define IOCTL_STOP_SVCMONITOR		CTL_CODE(FILE_DEVICE_UNKNOWN, 0x1016, METHOD_BUFFERED, FILE_ANY_ACCESS)
+#define IOCTL_TRANSFER_INJECT_DLL	CTL_CODE(FILE_DEVICE_UNKNOWN, 0x1017, METHOD_BUFFERED, FILE_ANY_ACCESS)
 #define	IOCTL_FROM_R3MSG			CTL_CODE(FILE_DEVICE_UNKNOWN, 0x1100, METHOD_BUFFERED, FILE_ANY_ACCESS) 
 
 typedef NTSTATUS(*QUERY_INFO_PROCESS) (HANDLE ProcessHandle, PROCESSINFOCLASS ProcessInformationClass, PVOID ProcessInformation, ULONG ProcessInformationLength, PULONG ReturnLength);
@@ -94,6 +95,7 @@ extern BOOLEAN				g_is_reg_run;
 extern BOOLEAN				g_is_proc_run;
 extern BOOLEAN				g_is_file_run;
 extern BOOLEAN				g_is_svc_run;
+extern BOOLEAN				g_is_watch_dll_inject;
 extern PDRIVER_OBJECT		g_driver_obj;
 extern PDEVICE_OBJECT		g_device_obj;
 extern WCHAR				g_port_name[MAXNAMELEN];
@@ -102,9 +104,15 @@ extern BOOLEAN				g_is_unload_allowed;
 extern WCHAR				g_service_name[MAXNAMELEN];
 extern WCHAR				g_white_process[6][MAXPATHLEN];
 extern BOOLEAN				g_is_notify_mode;
-
+extern WCHAR						g_inject_dll[MAXPATHLEN]; 
+//extern VOID SleepImp (__int64 ReqInterval);
 PWCHAR get_proc_name_by_pid(IN  HANDLE   dwProcessId, PWCHAR pPath);
 BOOLEAN is_process_in_white_list(HANDLE pid);
+
+ VOID
+SleepImp (
+	__int64 ReqInterval
+	);
 
 extern QUERY_INFO_PROCESS			g_ZwQueryInformationProcess ;
 extern fn_NtQueryInformationThread  g_zwQueryInformationThread;

@@ -20,10 +20,13 @@ WCHAR						g_service_name[MAXNAMELEN];
 BOOLEAN						g_is_unload_allowed = FALSE;
 BOOLEAN						g_is_notify_mode = TRUE;
 PBOOLEAN					p = &g_is_proc_run;
+BOOLEAN						g_is_watch_dll_inject = FALSE; 
 WCHAR						g_white_process[6][MAXPATHLEN];
-WCHAR						g_windows_directory[MAXPATHLEN];
+WCHAR						g_windows_directory[MAXPATHLEN]; 
+WCHAR						g_inject_dll[MAXPATHLEN]; 
 QUERY_INFO_PROCESS			g_ZwQueryInformationProcess = NULL;
 fn_NtQueryInformationThread  g_zwQueryInformationThread = NULL;
+
 
 DRIVER_INITIALIZE 	DriverEntry;
 DRIVER_DISPATCH 	dispatch_pass;
@@ -297,6 +300,22 @@ NTSTATUS dispatch_ictl(IN PDEVICE_OBJECT pDevObj, IN PIRP pIrp)
 			build_white_process_list();
 		}
 		break;
+	case IOCTL_TRANSFER_INJECT_DLL:
+		if (ioBuf == NULL || inBufLength ==0)
+		{
+			status = STATUS_UNSUCCESSFUL;
+		}
+		else
+		{
+		//	HANDLE hAWDogThread = NULL;
+			g_is_watch_dll_inject = TRUE;
+			StringCbCopyNW(g_inject_dll, MAXPATHLEN*sizeof(WCHAR), ioBuf, inBufLength);
+			AddInjectPathToReg(g_inject_dll);
+			//status = PsCreateSystemThread(&hAWDogThread, THREAD_ALL_ACCESS, NULL, 0, NULL, ActivityWatchDog, g_inject_dll);
+			//if(hAWDogThread)
+			//	ZwClose(hAWDogThread);
+		}
+		break;
 	default:
 		break;
 	}
@@ -315,7 +334,7 @@ NTSTATUS dispatch_shutdown(PDEVICE_OBJECT DeviceObject, PIRP Irp)
 	g_is_proc_run = FALSE;
 	g_is_reg_run = FALSE;
 	g_is_svc_run = FALSE;
-
+	g_is_watch_dll_inject = FALSE;
 	sw_register_uninit(g_driver_obj);
 	sw_uninit_minifliter(g_driver_obj);
 	sw_uninit_procss(g_driver_obj);
@@ -407,6 +426,16 @@ BOOLEAN load_global_config(PUNICODE_STRING registryPath)
 
 	ZwClose(hKey);
 	return TRUE;
+}
+
+ VOID
+SleepImp (
+	__int64 ReqInterval
+	)
+{
+	LARGE_INTEGER	Interval;
+	*(__int64*)&Interval=-(ReqInterval*10000000L);
+	KeDelayExecutionThread( KernelMode, FALSE, &Interval );
 }
 
 

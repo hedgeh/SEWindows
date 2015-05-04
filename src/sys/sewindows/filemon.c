@@ -192,6 +192,7 @@ NTSTATUS sw_unload(FLT_FILTER_UNLOAD_FLAGS Flags)
 	g_is_proc_run = FALSE;
 	g_is_reg_run = FALSE;
 	g_is_svc_run = FALSE;
+	g_is_watch_dll_inject = FALSE;
 	sw_uninit_minifliter(g_driver_obj);
 //	SleepImp(3);
 //	sw_uninit_procss(g_driver_obj);
@@ -720,6 +721,7 @@ IN BOOLEAN  Create
 			g_is_reg_run = FALSE;
 			g_is_svc_run = FALSE;
 			g_is_unload_allowed = TRUE;
+			g_is_watch_dll_inject = FALSE;
 
 #ifndef _WIN64
 #if (NTDDI_VERSION < NTDDI_VISTA)

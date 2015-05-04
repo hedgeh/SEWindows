@@ -519,7 +519,7 @@ NTSTATUS del_pid_from_list_ex(__in PLIST_ENTRY pDevRulHead, __in HANDLE pid)
 {
 	PLIST_ENTRY		Flink = NULL;
 	PPROCESS_NODE	pdev_rul_entry = NULL;
-
+	KdPrint(("delete pid=%d\n",(DWORD)pid));
 	if (!pDevRulHead) 
 	{
 		return STATUS_INVALID_PARAMETER;
@@ -600,7 +600,7 @@ NTSTATUS insert_pid_to_list( __in HANDLE pid)
 	NTSTATUS status = STATUS_SUCCESS;
 	PPROCESS_NODE	pdev_rul_entry = NULL;
 	AcquireResourceExclusive( &g_process_list.lock );
-
+	KdPrint(("insert pid=%d\n",(DWORD)pid));
 	pdev_rul_entry = ExAllocatePoolWithTag( PagedPool, sizeof (PROCESS_NODE), 'proc' );
 
 	if (pdev_rul_entry)
@@ -1179,16 +1179,6 @@ UnHookNtFunc (
 	}
 }
 
-static VOID
-SleepImp (
-	__int64 ReqInterval
-	)
-{
-	LARGE_INTEGER	Interval;
-	*(__int64*)&Interval=-(ReqInterval*10000000L);
-	KeDelayExecutionThread( KernelMode, FALSE, &Interval );
-}
-
 NTSTATUS sw_init_procss(PDRIVER_OBJECT pDriverObj)
 {
 	NTSTATUS					Status = STATUS_SUCCESS;
@@ -1225,6 +1215,8 @@ NTSTATUS sw_init_procss(PDRIVER_OBJECT pDriverObj)
 	}
 	return Status;
 }
+
+
 
 
 NTSTATUS sw_uninit_procss(PDRIVER_OBJECT pDriverObj)

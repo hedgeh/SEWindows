@@ -71,23 +71,18 @@ void build_white_process_list()
 	StringCbCatW(g_white_process[12], MAXPATHLEN*sizeof(WCHAR), L"\\system32\\wuauclt.exe"); 
 }
 
-BOOLEAN is_pid_in_whitelist(DWORD pid)
+BOOLEAN is_pid_in_whitelist(DWORD pid ,WCHAR* path)
 {
-	WCHAR	procpath[MAX_PATH];
 	DWORD ID = pid;
 
-	if (ID == 0 || ID == 4 || ID == GetCurrentProcessId())
+	if (!path || ID == 0 || ID == 4 || ID == GetCurrentProcessId())
 	{
 		return  TRUE;
 	}
 
-	if (!get_proc_path_by_pid(ID, procpath))
-	{
-		return  TRUE;
-	}
 	for (int i = 0; i < WHITE_LIST_LEN; i++)
 	{
-		if (_wcsicmp(procpath, g_white_process[i]) == 0)
+		if (_wcsicmp(path, g_white_process[i]) == 0)
 		{
 			return TRUE;
 		}
@@ -164,12 +159,133 @@ BOOLEAN  InjectLibW(DWORD dwProcessId, PCWSTR pszLibFile)
 	return(bOk);
 }
 
-
-BOOLEAN inject_dll_by_pid(DWORD pid)
+WORD GetPeTypeAndPlatform(const TCHAR* pPath, WORD* platfrom)
 {
-	if (is_pid_in_whitelist(pid))
+	HANDLE						hFile = NULL;
+	HANDLE						hFileMap = NULL;
+	LPTSTR						lpMapAddr = NULL;
+	WORD						bRet = IMAGE_SUBSYSTEM_UNKNOWN;
+	PIMAGE_DOS_HEADER			pDos = NULL;
+//	PIMAGE_FILE_HEADER			pFileHeader = NULL;
+	PIMAGE_NT_HEADERS64			pNtHeader64 = NULL;
+	PIMAGE_NT_HEADERS32			pNtHeader32 = NULL;
+
+	if (platfrom)
+	{
+		*platfrom = IMAGE_FILE_MACHINE_UNKNOWN;
+	}
+
+	if (!pPath)
+	{
+		return IMAGE_SUBSYSTEM_UNKNOWN;
+	}
+
+	__try
+	{
+		hFile = ::CreateFile(pPath, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_FLAG_RANDOM_ACCESS, NULL);
+		if (hFile == INVALID_HANDLE_VALUE)
+		{
+			bRet = IMAGE_SUBSYSTEM_UNKNOWN;
+			__leave;
+		}
+
+		hFileMap = CreateFileMapping(hFile, NULL, PAGE_READONLY, 0, 0, NULL);
+		if (hFileMap == NULL)
+		{
+			bRet = IMAGE_SUBSYSTEM_UNKNOWN;
+			__leave;
+		}
+
+		lpMapAddr = (LPTSTR)MapViewOfFile(hFileMap, SECTION_MAP_READ, 0, 0, 0);
+		if (!lpMapAddr)
+		{
+			bRet = IMAGE_SUBSYSTEM_UNKNOWN;
+			__leave;
+		}
+
+		pDos = (PIMAGE_DOS_HEADER)lpMapAddr;
+		if (pDos->e_magic != IMAGE_DOS_SIGNATURE)
+		{
+			bRet = IMAGE_SUBSYSTEM_UNKNOWN;
+			__leave;
+		}
+
+		pNtHeader32 = (PIMAGE_NT_HEADERS32)(pDos->e_lfanew + (ULONG_PTR)pDos);
+		pNtHeader64 = (PIMAGE_NT_HEADERS64)pNtHeader32;
+
+		if (pNtHeader32->Signature != IMAGE_NT_SIGNATURE)
+		{
+			bRet = IMAGE_SUBSYSTEM_UNKNOWN;
+			__leave;
+		}
+
+		if (platfrom)
+		{
+			*platfrom = pNtHeader32->FileHeader.Machine;
+		}
+
+		if (pNtHeader32->FileHeader.Machine == IMAGE_FILE_MACHINE_IA64 || pNtHeader32->FileHeader.Machine == IMAGE_FILE_MACHINE_AMD64)
+		{
+			bRet = pNtHeader64->OptionalHeader.Subsystem;
+			__leave;
+		}
+		else if (pNtHeader32->FileHeader.Machine == IMAGE_FILE_MACHINE_I386)
+		{
+			bRet = pNtHeader32->OptionalHeader.Subsystem;
+			__leave;
+		}
+		else
+		{
+			bRet = IMAGE_SUBSYSTEM_UNKNOWN;
+			__leave;
+		}
+	}
+	__finally
+	{
+		if (hFile)
+		{
+			CloseHandle(hFile);
+		}
+		if (hFileMap)
+		{
+			CloseHandle(hFileMap);
+		}
+		if (lpMapAddr)
+		{
+			UnmapViewOfFile(lpMapAddr);
+		}
+	}
+
+	return bRet;
+}
+
+
+BOOLEAN inject_dll_by_pid(DWORD pid,BOOLEAN bOnlyCui)
+{
+	WCHAR	procpath[MAX_PATH];
+	DWORD	ID = pid;
+
+	if (ID == 0 || ID == 4 || ID == GetCurrentProcessId())
+	{
+		return  TRUE;
+	}
+
+	if (!get_proc_path_by_pid(ID, procpath))
+	{
+		return  TRUE;
+	}
+
+	if (is_pid_in_whitelist(ID, procpath))
 	{
 		return TRUE;
+	}
+
+	if (bOnlyCui)
+	{
+		if (GetPeTypeAndPlatform(procpath, NULL) != IMAGE_SUBSYSTEM_WINDOWS_CUI)
+		{
+			return TRUE;
+		}
 	}
 
 	CString path = get_module_path();
@@ -354,7 +470,7 @@ void bulid_p2u_map()
 		{
 			if (_wcsnicmp(windir, proc_path, wcslen(windir)) != 0 || mywcsistr(proc_path, L"taskmgr.exe") || mywcsistr(proc_path, L"mmc.exe"))
 			{
-				inject_dll_by_pid(procEntry.th32ProcessID);
+				inject_dll_by_pid(procEntry.th32ProcessID,FALSE);
 			}
 			insert_to_procinfo_list(procEntry.th32ProcessID, user_name,proc_path);
 //			printf("\ninsert_to_procinfo_list:\nproc_path:%ws\n user_name:%ws\n",proc_path,user_name);

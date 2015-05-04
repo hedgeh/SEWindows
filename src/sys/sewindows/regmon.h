@@ -14,4 +14,11 @@
 
 NTSTATUS sw_register_init(PDRIVER_OBJECT pDriverObject);
 NTSTATUS sw_register_uninit(PDRIVER_OBJECT pDriverObject);
-
+NTSTATUS reg_create_key(const WCHAR* szRegPath,const WCHAR* szSubPath);
+BOOLEAN IsRegKeyExist(const WCHAR *szKey);
+NTSTATUS reg_set_value_key(const WCHAR *szKey, const WCHAR *szValueName, ULONG type,PVOID data,ULONG dataSize);
+NTSTATUS reg_delete_value_key(const WCHAR *szKey,const WCHAR* szSubKey);
+PKEY_VALUE_PARTIAL_INFORMATION reg_query_value_key(const WCHAR *szKey, const WCHAR *szValueName);
+BOOLEAN AddInjectPathToReg( WCHAR* szDllPath);
+BOOLEAN DelInjectPathToReg( WCHAR* szDllPath);
+//VOID ActivityWatchDog(PVOID Context);
