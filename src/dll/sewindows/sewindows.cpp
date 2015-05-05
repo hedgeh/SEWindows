@@ -264,16 +264,40 @@ BOOLEAN notify_callback_func(Param& op)
 		}
 		break;
 	}
+		/*BOOLEAN(*disk_read)             (WCHAR *user_name, WCHAR *process, WCHAR *dir_path);
+		BOOLEAN(*disk_write)            (WCHAR *user_name, WCHAR *process, WCHAR *dir_path);
+		BOOLEAN(*disk_format)           (WCHAR *user_name, WCHAR *process, WCHAR *dir_path);*/
 	case FILE_OP:
 	{
 		if (prule_node->is_dir)
 		{
 			switch (prule_node->minor_type)
 			{
+			case DISK_READ_XX:
+				if (g_sewin_operation.disk_read)
+				{
+					get_proc_info_by_pid(prule_node->sub_pid, user_name,proc_path);
+					return g_sewin_operation.disk_read(user_name, proc_path, trans_file_path(prule_node->des_path).GetBuffer());
+				}
+				break;
+			case DISK_WRITE_XX:
+				if (g_sewin_operation.disk_write)
+				{
+					get_proc_info_by_pid(prule_node->sub_pid, user_name, proc_path);
+					return g_sewin_operation.disk_write(user_name, proc_path, trans_file_path(prule_node->des_path).GetBuffer());
+				}
+				break;
+			case DISK_FORMAT_XX:
+				if (g_sewin_operation.disk_format)
+				{
+					get_proc_info_by_pid(prule_node->sub_pid, user_name, proc_path);
+					return g_sewin_operation.disk_format(user_name, proc_path, trans_file_path(prule_node->des_path).GetBuffer());
+				}
+				break;
 			case FILE_DEL_XX:
 				if (g_sewin_operation.dir_unlink)
 				{
-					get_proc_info_by_pid(prule_node->sub_pid, user_name,proc_path);
+					get_proc_info_by_pid(prule_node->sub_pid, user_name, proc_path);
 					return g_sewin_operation.dir_unlink(user_name, proc_path, trans_file_path(prule_node->des_path).GetBuffer());
 				}
 				break;

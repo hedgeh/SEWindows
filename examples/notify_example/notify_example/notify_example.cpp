@@ -29,6 +29,25 @@ BOOLEAN  monitor_svc_change(WCHAR *user_name, WCHAR *process, WCHAR *file_path)
     return FALSE;
 }
 
+BOOLEAN  disk_read(WCHAR *user_name, WCHAR *process, WCHAR *file_path)
+{
+	wprintf(_T("disk_read\n User=%s, Process=%s, file=%s\n"), user_name, process, file_path);
+	return TRUE;
+}
+
+BOOLEAN  disk_write(WCHAR *user_name, WCHAR *process, WCHAR *file_path)
+{
+	wprintf(_T("disk_write\n User=%s, Process=%s, file=%s\n"), user_name, process, file_path);
+	return TRUE;
+}
+
+BOOLEAN  disk_format(WCHAR *user_name, WCHAR *process, WCHAR *file_path)
+{
+	wprintf(_T("disk_format\n User=%s, Process=%s, file=%s\n"), user_name, process, file_path);
+	return FALSE;
+}
+
+
 BOOLEAN  monitor_svc_delete(WCHAR *user_name, WCHAR *process, WCHAR *file_path)
 {
 	wprintf(_T("monitor_svc_delete\n  User=%s, Process=%s, file=%s\n"), user_name, process, file_path);
@@ -90,6 +109,9 @@ int _tmain(int argc, TCHAR * argv[])
 	ops.service_delete = monitor_svc_delete;
 	ops.service_create = monitor_svc_create;
 	ops.driver_load = monitor_svc_driver;
+	ops.disk_format = disk_format;
+	ops.disk_read = disk_read;
+	ops.disk_write = disk_write;
 
 	ops.process_kill = monitorprocess_kill;
     monitor_sewin_register_opt(&ops);

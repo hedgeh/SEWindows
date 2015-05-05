@@ -45,11 +45,10 @@ sw_pre_diskctl_callback (
     __deref_out_opt PVOID *CompletionContext
     )
 {
-//    NTSTATUS	status;
-	ULONG		io_ctl_code = 0;
-
-	UNREFERENCED_PARAMETER( FltObjects );
-    UNREFERENCED_PARAMETER( CompletionContext );
+    NTSTATUS					status;
+	ULONG						io_ctl_code = 0;
+	PHIPS_RULE_NODE				cinf = NULL;
+	PFLT_FILE_NAME_INFORMATION  nameInfo = NULL;
 	
 	if (ExGetPreviousMode() == KernelMode)
 	{
@@ -67,73 +66,125 @@ sw_pre_diskctl_callback (
 
 	io_ctl_code = Data->Iopb->Parameters.DeviceIoControl.Common.IoControlCode;
 
-	switch (io_ctl_code)
+	if (io_ctl_code != IOCTL_DISK_SET_PARTITION_INFO && io_ctl_code != IOCTL_DISK_VERIFY)
 	{
-	case IOCTL_DISK_GET_DRIVE_GEOMETRY:
-		KdPrint(("IOCTL_DISK_GET_DRIVE_GEOMETRY"));
-		break;
-	case IOCTL_DISK_GET_PARTITION_INFO:
-		KdPrint(("IOCTL_DISK_GET_PARTITION_INFO"));
-		break;
-	case IOCTL_DISK_SET_PARTITION_INFO:
-		KdPrint(("IOCTL_DISK_SET_PARTITION_INFO"));
-		break;
-	case IOCTL_DISK_GET_DRIVE_LAYOUT:
-
-		KdPrint(("IOCTL_DISK_GET_DRIVE_LAYOUT"));
-		break;
-	case IOCTL_DISK_SET_DRIVE_LAYOUT:
-		KdPrint(("IOCTL_DISK_SET_DRIVE_LAYOUT"));
-		break;
-	case IOCTL_DISK_VERIFY:
-		KdPrint(("IOCTL_DISK_VERIFY"));
-		break;
-	case IOCTL_DISK_FORMAT_TRACKS:
-		KdPrint(("IOCTL_DISK_FORMAT_TRACKS"));
-		break;
-	case IOCTL_DISK_REASSIGN_BLOCKS:
-		KdPrint(("IOCTL_DISK_REASSIGN_BLOCKS"));
-		break;
-	case IOCTL_DISK_PERFORMANCE:
-		KdPrint(("IOCTL_DISK_PERFORMANCE"));
-		break;
-	case IOCTL_DISK_IS_WRITABLE:
-		KdPrint(("IOCTL_DISK_IS_WRITABLE"));
-		break;
-	case IOCTL_DISK_LOGGING:
-		KdPrint(("IOCTL_DISK_LOGGING"));
-		break;
-
-	case IOCTL_DISK_FORMAT_TRACKS_EX:
-		KdPrint(("IOCTL_DISK_FORMAT_TRACKS_EX"));
-		break;
-
-	case IOCTL_DISK_HISTOGRAM_STRUCTURE:
-		KdPrint(("IOCTL_DISK_HISTOGRAM_STRUCTURE"));
-		break;
-
-	case IOCTL_DISK_HISTOGRAM_DATA:
-		KdPrint(("IOCTL_DISK_HISTOGRAM_DATA"));
-		break;
-
-	case IOCTL_DISK_HISTOGRAM_RESET:
-		KdPrint(("IOCTL_DISK_HISTOGRAM_RESET"));
-		break;
-
-	case IOCTL_DISK_REQUEST_STRUCTURE:
-		KdPrint(("IOCTL_DISK_REQUEST_STRUCTURE"));
-		break;
-
-	case IOCTL_DISK_REQUEST_DATA:
-		KdPrint(("IOCTL_DISK_REQUEST_DATA"));
-		break;
-	case IOCTL_DISK_PERFORMANCE_OFF:
-		KdPrint(("IOCTL_DISK_PERFORMANCE_OFF"));
-		break;
-	default:
-		break;
+		return FLT_PREOP_SUCCESS_NO_CALLBACK;
 	}
 
+	//switch (io_ctl_code)
+	//{
+	//case IOCTL_DISK_GET_DRIVE_GEOMETRY:
+	//	KdPrint(("IOCTL_DISK_GET_DRIVE_GEOMETRY"));
+	//	break;
+	//case IOCTL_DISK_GET_PARTITION_INFO:
+	//	KdPrint(("IOCTL_DISK_GET_PARTITION_INFO"));
+	//	break;
+	//case IOCTL_DISK_SET_PARTITION_INFO://///////////////
+	//	KdPrint(("IOCTL_DISK_SET_PARTITION_INFO"));
+	//	break;
+	//case IOCTL_DISK_GET_DRIVE_LAYOUT:
+	//	KdPrint(("IOCTL_DISK_GET_DRIVE_LAYOUT"));
+	//	break;
+	//case IOCTL_DISK_SET_DRIVE_LAYOUT:
+	//	KdPrint(("IOCTL_DISK_SET_DRIVE_LAYOUT"));
+	//	break;
+	//case IOCTL_DISK_VERIFY://////////////////////////////
+	//	KdPrint(("IOCTL_DISK_VERIFY"));
+	//	break;
+	//case IOCTL_DISK_FORMAT_TRACKS:
+	//	KdPrint(("IOCTL_DISK_FORMAT_TRACKS"));
+	//	break;
+	//case IOCTL_DISK_REASSIGN_BLOCKS:
+	//	KdPrint(("IOCTL_DISK_REASSIGN_BLOCKS"));
+	//	break;
+	//case IOCTL_DISK_PERFORMANCE:
+	//	KdPrint(("IOCTL_DISK_PERFORMANCE"));
+	//	break;
+	//case IOCTL_DISK_IS_WRITABLE:
+	//	KdPrint(("IOCTL_DISK_IS_WRITABLE"));
+	//	break;
+	//case IOCTL_DISK_LOGGING:
+	//	KdPrint(("IOCTL_DISK_LOGGING"));
+	//	break;
+
+	//case IOCTL_DISK_FORMAT_TRACKS_EX:
+	//	KdPrint(("IOCTL_DISK_FORMAT_TRACKS_EX"));
+	//	break;
+
+	//case IOCTL_DISK_HISTOGRAM_STRUCTURE:
+	//	KdPrint(("IOCTL_DISK_HISTOGRAM_STRUCTURE"));
+	//	break;
+
+	//case IOCTL_DISK_HISTOGRAM_DATA:
+	//	KdPrint(("IOCTL_DISK_HISTOGRAM_DATA"));
+	//	break;
+
+	//case IOCTL_DISK_HISTOGRAM_RESET:
+	//	KdPrint(("IOCTL_DISK_HISTOGRAM_RESET"));
+	//	break;
+
+	//case IOCTL_DISK_REQUEST_STRUCTURE:
+	//	KdPrint(("IOCTL_DISK_REQUEST_STRUCTURE"));
+	//	break;
+
+	//case IOCTL_DISK_REQUEST_DATA:
+	//	KdPrint(("IOCTL_DISK_REQUEST_DATA"));
+	//	break;
+	//case IOCTL_DISK_PERFORMANCE_OFF:
+	//	KdPrint(("IOCTL_DISK_PERFORMANCE_OFF"));
+	//	break;
+	//default:
+	//	break;
+	//}
+
+	cinf = ExAllocateFromPagedLookasideList(&g_file_lookaside_list);
+	if (cinf == NULL)
+	{
+		return FLT_PREOP_SUCCESS_NO_CALLBACK;
+	}
+	RtlZeroMemory(cinf, sizeof(HIPS_RULE_NODE));
+	cinf->major_type = FILE_OP;
+	cinf->minor_type = DISK_FORMAT_XX;
+	cinf->sub_pid = PsGetCurrentProcessId();
+	cinf->is_dir = TRUE;
+	status = FltGetFileNameInformation(Data, FLT_FILE_NAME_OPENED |FLT_FILE_NAME_QUERY_ALWAYS_ALLOW_CACHE_LOOKUP, &nameInfo);
+	if (!NT_SUCCESS(status))
+	{
+		goto err_ret;
+	}
+
+	FltParseFileNameInformation(nameInfo);
+	if (nameInfo->Name.Length >= MAXPATHLEN*sizeof(WCHAR))
+	{
+		goto err_ret;
+	}
+	StringCbCopyNW(cinf->des_path,sizeof(WCHAR)*MAXPATHLEN,nameInfo->Name.Buffer, nameInfo->Name.Length);
+
+	if (rule_match(cinf) == TRUE)
+	{
+		ExFreeToPagedLookasideList(&g_file_lookaside_list, cinf);
+		FltReleaseFileNameInformation(nameInfo);
+		return FLT_PREOP_SUCCESS_NO_CALLBACK;
+	}
+	else
+	{
+		ExFreeToPagedLookasideList(&g_file_lookaside_list, cinf);
+		FltReleaseFileNameInformation(nameInfo);
+		Data->IoStatus.Status = STATUS_ACCESS_DENIED;
+		Data->IoStatus.Information = 0;
+		return FLT_PREOP_COMPLETE;
+	}
+
+err_ret:
+	if (nameInfo)
+	{
+		FltReleaseFileNameInformation(nameInfo);
+		nameInfo = NULL;
+	}
+	if (cinf)
+	{
+		ExFreeToPagedLookasideList(&g_file_lookaside_list, cinf);
+	}
     return FLT_PREOP_SUCCESS_NO_CALLBACK;
 }
 
@@ -266,9 +317,9 @@ FLT_PREOP_CALLBACK_STATUS sw_pre_create_callback( PFLT_CALLBACK_DATA Data,PCFLT_
 	}
 
 
-	if (FlagOn(Data->Iopb->TargetFileObject->Flags, FO_VOLUME_OPEN) || FlagOn(Data->Iopb->TargetFileObject->Flags, FO_NAMED_PIPE) || FlagOn(Data->Iopb->TargetFileObject->Flags, FO_MAILSLOT))
+	if (/*FlagOn(Data->Iopb->TargetFileObject->Flags, FO_VOLUME_OPEN) || */FlagOn(Data->Iopb->TargetFileObject->Flags, FO_NAMED_PIPE) || FlagOn(Data->Iopb->TargetFileObject->Flags, FO_MAILSLOT))
 	{
-		{
+		/*{
 			NTSTATUS s;
 			PFLT_FILE_NAME_INFORMATION	n = NULL;
 
@@ -279,7 +330,7 @@ FLT_PREOP_CALLBACK_STATUS sw_pre_create_callback( PFLT_CALLBACK_DATA Data,PCFLT_
 				KdPrint(("%wZ\n",&n->Name));
 				FltReleaseFileNameInformation(n);
 			}
-		}
+		}*/
 		
 		return FLT_PREOP_SUCCESS_NO_CALLBACK;
 	}
@@ -331,6 +382,54 @@ FLT_PREOP_CALLBACK_STATUS sw_pre_create_callback( PFLT_CALLBACK_DATA Data,PCFLT_
 	}
 	StringCbCopyNW(cinf->des_path,sizeof(WCHAR)*MAXPATHLEN,nameInfo->Name.Buffer, nameInfo->Name.Length);
 
+	/*if (wcslen(cinf->des_path) <= wcslen(L"\\Device\\HarddiskVolume1\\"))
+	{
+		goto err_ret;
+	}*/
+	cinf->is_dir = TRUE;
+	if (FlagOn(Data->Iopb->TargetFileObject->Flags, FO_VOLUME_OPEN))
+	{
+		if (OriginalDesiredAccess & FILE_READ_DATA)
+		{
+			cinf->minor_type = DISK_READ_XX;
+			if (rule_match(cinf) != TRUE)
+			{
+				Data->Iopb->Parameters.Create.SecurityContext->AccessState->OriginalDesiredAccess &= ~FILE_READ_DATA;
+				Data->Iopb->Parameters.Create.SecurityContext->AccessState->RemainingDesiredAccess &= ~FILE_READ_DATA;
+				Data->Iopb->Parameters.Create.SecurityContext->DesiredAccess &= ~FILE_READ_DATA;
+
+				ExFreeToPagedLookasideList(&g_file_lookaside_list, cinf);
+				FltReleaseFileNameInformation(nameInfo);
+				Data->IoStatus.Status = STATUS_UNSUCCESSFUL;
+				Data->IoStatus.Information = 0;
+				return FLT_PREOP_COMPLETE;
+			}
+		}
+
+		if ((OriginalDesiredAccess & FILE_WRITE_DATA) || (OriginalDesiredAccess & FILE_APPEND_DATA))
+		{
+			cinf->minor_type = DISK_WRITE_XX;
+			if (rule_match(cinf) != TRUE)
+			{
+				Data->Iopb->Parameters.Create.SecurityContext->AccessState->OriginalDesiredAccess &= ~FILE_WRITE_DATA;
+				Data->Iopb->Parameters.Create.SecurityContext->AccessState->RemainingDesiredAccess &= ~FILE_WRITE_DATA;
+				Data->Iopb->Parameters.Create.SecurityContext->DesiredAccess &= ~FILE_WRITE_DATA;
+
+				Data->Iopb->Parameters.Create.SecurityContext->AccessState->OriginalDesiredAccess &= ~FILE_APPEND_DATA;
+				Data->Iopb->Parameters.Create.SecurityContext->AccessState->RemainingDesiredAccess &= ~FILE_APPEND_DATA;
+				Data->Iopb->Parameters.Create.SecurityContext->DesiredAccess &= ~FILE_APPEND_DATA;
+
+				ExFreeToPagedLookasideList(&g_file_lookaside_list, cinf);
+				FltReleaseFileNameInformation(nameInfo);
+				Data->IoStatus.Status = STATUS_UNSUCCESSFUL;
+				Data->IoStatus.Information = 0;
+				return FLT_PREOP_COMPLETE;
+			}
+		}
+
+		goto err_ret;
+	}
+
 	if (is_dir(cinf->des_path))
 	{
 		IsDirectory = TRUE;
@@ -344,11 +443,6 @@ FLT_PREOP_CALLBACK_STATUS sw_pre_create_callback( PFLT_CALLBACK_DATA Data,PCFLT_
 	}
 	
 	cinf->is_dir = IsDirectory;
-
-	if (wcslen(cinf->des_path) <= wcslen(L"\\Device\\HarddiskVolume1\\"))
-	{
-		goto err_ret;
-	}
 
 	if ((OriginalDesiredAccess & FILE_EXECUTE))
 	{

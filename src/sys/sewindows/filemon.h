@@ -8,6 +8,9 @@
 #define	FILE_CREATE_XX			5
 #define	FILE_SETINFO_XX			6
 #define	FILE_EXECUTE_XX			7
+#define	DISK_READ_XX			8
+#define	DISK_WRITE_XX			9
+#define	DISK_FORMAT_XX			10
 
 
 

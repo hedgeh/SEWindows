@@ -15,6 +15,7 @@
 #define SEWIN_TYPE_FILE         0x1    // File      operations
 #define SEWIN_TYPE_PROC         0x2    // Process   operations
 #define SEWIN_TYPE_REG          0x4    // Registery operations
+#define SEWIN_TYPE_SCVDRV       0x8    // Registery operations
 
 // File (dir) Attribute
 typedef struct _FILE_BASIC_INFORMATION {
@@ -52,6 +53,10 @@ struct sewin_operations {
     BOOLEAN(*dir_unlink)            (WCHAR *user_name, WCHAR *process, WCHAR *dir_path);
     BOOLEAN(*dir_set_attr)          (WCHAR *user_name, WCHAR *process, WCHAR *dir_path, PFILE_BASIC_INFORMATION pfbi);
     BOOLEAN(*dir_rename)            (WCHAR *user_name, WCHAR *process, WCHAR *src_dir, WCHAR *new_name);
+
+	BOOLEAN(*disk_read)             (WCHAR *user_name, WCHAR *process, WCHAR *dir_path);
+	BOOLEAN(*disk_write)            (WCHAR *user_name, WCHAR *process, WCHAR *dir_path);
+	BOOLEAN(*disk_format)           (WCHAR *user_name, WCHAR *process, WCHAR *dir_path);
 
     // Process operations
     BOOLEAN(*process_create)        (WCHAR *user_name, WCHAR *process, WCHAR *dst_proc);
