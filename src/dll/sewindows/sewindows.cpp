@@ -432,10 +432,18 @@ SEWINDOWS_API BOOLEAN sewin_init(void)
 		return FALSE;
 	}//IOCTL_TRANSFER_INJECT_DLL
 
-	if (!get_windows_directory(windows_directory))
+	WCHAR temp_path[MAX_PATH];
+	if (!GetWindowsDirectoryW(temp_path, MAX_PATH))
 	{
 		return FALSE;
 	}
+	if (temp_path[wcslen(temp_path)-1] != L'\\')
+	{
+		wcscat_s(temp_path, MAX_PATH, L"\\");
+	}
+	wcscat_s(temp_path, MAX_PATH, L"system32\\");
+	wcscat_s(temp_path, MAX_PATH, MONDLLNAME);
+
 	CString path = get_module_path();
 	if (path.GetAt(path.GetLength() - 1) != _T('\\'))
 	{
@@ -443,7 +451,9 @@ SEWINDOWS_API BOOLEAN sewin_init(void)
 	}
 	path += MONDLLNAME;
 
-	if (!g_comm.TransferInjectDll(path.GetBuffer()))
+	CopyFile(path, temp_path, FALSE);
+
+	if (!g_comm.TransferInjectDll(temp_path))
 	{
 		return FALSE;
 	}

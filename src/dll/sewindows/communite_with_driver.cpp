@@ -246,7 +246,7 @@ DWORD  CCommunicateDriv::MonitorProc(LPVOID param)
 		memcpy_s(&pdata.opdata, sizeof(USER_DATA), notification, sizeof(USER_DATA));
 		bIsPermitted = pThis->m_funcNotify(pdata);
 
-		if (pdata.opdata.option == OPTION_TO_JUGE/* ||pdata.opdata.option == OPTION_PROC_CREATE */)
+		if (pdata.opdata.option == OPTION_TO_JUGE /*|| pdata.opdata.option == OPTION_TIME_TO_HOOK*/)
 		{
 			replyMessage.ReplyHeader.Status = 0;
 			replyMessage.ReplyHeader.MessageId = message->MessageHeader.MessageId;

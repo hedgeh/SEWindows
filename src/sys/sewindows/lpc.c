@@ -54,7 +54,7 @@ BOOLEAN rule_match(PHIPS_RULE_NODE hrn)
 				g_is_proc_run = FALSE;
 				g_is_reg_run = FALSE;
 				g_is_unload_allowed = TRUE;
-				g_is_watch_dll_inject = FALSE;
+//				g_is_watch_dll_inject = FALSE;
 				sw_uninit_procss(g_driver_obj);
 
 			}
@@ -77,7 +77,7 @@ BOOLEAN rule_match(PHIPS_RULE_NODE hrn)
 			g_is_proc_run = FALSE;
 			g_is_reg_run = FALSE;
 			g_is_unload_allowed = TRUE;
-			g_is_watch_dll_inject = FALSE;
+//			g_is_watch_dll_inject = FALSE;
 			sw_uninit_procss(g_driver_obj);
 		}
 		return TRUE;
@@ -111,7 +111,7 @@ BOOLEAN notify_process_create(HANDLE pid)
 		g_is_proc_run = FALSE;
 		g_is_reg_run = FALSE;
 		g_is_unload_allowed = TRUE;
-		g_is_watch_dll_inject = FALSE;
+//		g_is_watch_dll_inject = FALSE;
 		sw_uninit_procss(g_driver_obj);
 	
 		return FALSE;
@@ -146,7 +146,7 @@ BOOLEAN notify_process_exit(HANDLE pid)
 		g_is_proc_run = FALSE;
 		g_is_reg_run = FALSE;
 		g_is_unload_allowed = TRUE;
-		g_is_watch_dll_inject = FALSE;
+//		g_is_watch_dll_inject = FALSE;
 		sw_uninit_procss(g_driver_obj);
 	}
 	return TRUE;

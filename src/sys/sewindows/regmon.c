@@ -479,7 +479,7 @@ NTSTATUS reg_create_key(const WCHAR* szRegPath,const WCHAR* szSubPath)
 	OBJECT_ATTRIBUTES 	subObjectAttributes = {0};
 	NTSTATUS			ntStatus = STATUS_SUCCESS;
 	WCHAR*				szLongPath = NULL;
-	UNICODE_STRING		usString = {0};
+//	UNICODE_STRING		usString = {0};
 	ULONG				ulLen = 0;
 	
 	if (!szRegPath || !szSubPath || !IsRegKeyExist(szRegPath))
@@ -487,7 +487,7 @@ NTSTATUS reg_create_key(const WCHAR* szRegPath,const WCHAR* szSubPath)
 		return STATUS_UNSUCCESSFUL;
 	}
 
-	ulLen = (wcslen(szRegPath) + wcslen(szRegPath)+2)*sizeof(WCHAR);
+	ulLen = (wcslen(szRegPath) + wcslen(szSubPath)+2)*sizeof(WCHAR);
 
 	szLongPath = (WCHAR*)ExAllocatePoolWithTag(PagedPool,ulLen,'rego');
 	if (szLongPath == NULL)
@@ -562,7 +562,7 @@ NTSTATUS reg_set_value_key(const WCHAR *szKey, const WCHAR *szValueName, ULONG t
 	OBJECT_ATTRIBUTES 	objectAttributes = {0};
 	UNICODE_STRING 		ValueName = {0};
 	NTSTATUS			ntStatus = STATUS_SUCCESS;
-	ULONG				ulValue = 0;
+//	ULONG				ulValue = 0;
 
 	if (!szKey || !szValueName || !data || !dataSize || !IsRegKeyExist(szKey))
 	{
@@ -608,7 +608,7 @@ NTSTATUS reg_delete_value_key(const WCHAR *szKey,const WCHAR* szSubKey)
 	HANDLE 				hRegister = NULL;
 	OBJECT_ATTRIBUTES 	objectAttributes = {0};
 	UNICODE_STRING 		ValueName ={0};
-	ULONG 				ulSize = 0;
+//	ULONG 				ulSize = 0;
 	NTSTATUS			ntStatus = STATUS_SUCCESS;
 
 	RtlInitUnicodeString( &RegUnicodeString,szKey);
@@ -642,7 +642,7 @@ PKEY_VALUE_PARTIAL_INFORMATION reg_query_value_key(const WCHAR *szKey, const WCH
 	ULONG 							ulSize = 0;
 	NTSTATUS						ntStatus = STATUS_SUCCESS;
 	PKEY_VALUE_PARTIAL_INFORMATION	pvpi = NULL;
-	WCHAR*							szRet = NULL;
+//	WCHAR*							szRet = NULL;
 
 	RtlInitUnicodeString( &RegUnicodeString,szKey);
 	
@@ -735,13 +735,13 @@ BOOLEAN DeleteSubString(WCHAR* szStr, WCHAR* szSubStr)
 
 BOOLEAN DelInjectPathToReg( WCHAR* szDllPath)
 {
-	DWORD value = 1;
+//	DWORD value = 1;
 	NTSTATUS status;
 	PKEY_VALUE_PARTIAL_INFORMATION pvpi = NULL;
 	WCHAR*	szOrigin = NULL;
 	ULONG	szOriginLen = 0;
-	WCHAR*  szNew = NULL;
-	ULONG	szNewLen = 0;
+//	WCHAR*  szNew = NULL;
+//	ULONG	szNewLen = 0;
 
 	if (!IsRegKeyExist(DLL_INJECT_KEY))
 	{
