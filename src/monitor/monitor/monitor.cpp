@@ -87,7 +87,6 @@ SC_HANDLE WINAPI fake_CreateServiceW(
 	HIPS_RULE_NODE	hrn;
 
 	RtlZeroMemory(&hrn,sizeof(hrn));
-
 	hrn.major_type = SERVICE_OP;
 	if (dwServiceType == SERVICE_FILE_SYSTEM_DRIVER || dwServiceType == SERVICE_KERNEL_DRIVER)
 	{
@@ -125,22 +124,34 @@ SC_HANDLE WINAPI fake_CreateServiceW(
 		);
 }
 
-PWSTR  Ansi2Unicode(PCSTR pszLibFile) {
-
-	if (!pszLibFile)
+PWSTR Ansi2Unicode(PCSTR str)
+{
+	int len = 0;
+	if (!str)
 	{
 		return NULL;
 	}
-	SIZE_T cchSize = lstrlenA(pszLibFile) + 1;
-	PWSTR pszLibFileW = (PWSTR)malloc(cchSize * sizeof(wchar_t));
-
-	if (!pszLibFileW)
+	len = strlen(str);
+	int unicodeLen = ::MultiByteToWideChar(CP_ACP,
+		0,
+		str,
+		-1,
+		NULL,
+		0);
+	wchar_t * pUnicode;
+	pUnicode = (wchar_t*)malloc((unicodeLen + 1)*sizeof(WCHAR));
+	if (!pUnicode)
 	{
 		return NULL;
 	}
-	StringCchPrintfW(pszLibFileW, cchSize, L"%S", pszLibFile);
-	
-	return pszLibFileW;
+	memset(pUnicode, 0, (unicodeLen + 1)*sizeof(WCHAR));
+	::MultiByteToWideChar(CP_ACP,
+		0,
+		str,
+		-1,
+		(LPWSTR)pUnicode,
+		unicodeLen);
+	return pUnicode;
 }
 
 SC_HANDLE WINAPI fake_CreateServiceA(
@@ -167,7 +178,6 @@ SC_HANDLE WINAPI fake_CreateServiceA(
 	LPCWSTR     lpDependenciesW = Ansi2Unicode(lpDependencies);
 	LPCWSTR     lpServiceStartNameW = Ansi2Unicode(lpServiceStartName);
 	LPCWSTR     lpPasswordW = Ansi2Unicode(lpPassword);
-
 
 	handle = fake_CreateServiceW
 	(    

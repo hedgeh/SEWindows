@@ -56,8 +56,8 @@ BOOLEAN  monitor_svc_delete(WCHAR *user_name, WCHAR *process, WCHAR *file_path)
 
 BOOLEAN  monitorprocess_kill(WCHAR *user_name, WCHAR *process, WCHAR *file_path)
 {
-	wprintf(_T("monitor_svc_delete\n  User=%s, Process=%s, file=%s\n"), user_name, process, file_path);
-	return TRUE;
+	wprintf(_T("monitorprocess_kill\n  User=%s, Process=%s, file=%s\n"), user_name, process, file_path);
+	return FALSE;
 }
 
 BOOLEAN  monitor_svc_create(WCHAR *user_name, WCHAR *process, WCHAR *file_path, WCHAR *bin)
