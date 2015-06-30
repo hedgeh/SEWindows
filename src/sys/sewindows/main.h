@@ -1,10 +1,10 @@
 #pragma once
 #include <fltKernel.h>
-
+//test
 
 #pragma warning( disable:4127 4305 4100 4201)
-#define  MAXPATHLEN         260        // 文件|进程|注册表最大长度
-#define  MAXNAMELEN         64         // 用户名最大长度
+#define  MAXPATHLEN         260        // 文件|进程|注册柄篼畜长度
+#define  MAXNAMELEN         64         // 用户名畜长度
 
 #define _DEVICE_NAME L"\\Device\\"
 #define _DEVICE_DOSNAME L"\\DosDevices\\"
