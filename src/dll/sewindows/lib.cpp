@@ -723,7 +723,7 @@ ULONG get_the_top_altitude()
 	HRESULT  ret = FilterFindFirst(FilterAggregateBasicInformation, buffer, sizeof(buffer), &len, &handle);
 	if (ret != S_OK)
 	{
-		return altitude;
+		return 30000;
 	}
 
 	do

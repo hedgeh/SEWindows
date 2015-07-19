@@ -411,7 +411,7 @@ NTSTATUS sw_register_init(PDRIVER_OBJECT pDriverObject)
 	ExInitializePagedLookasideList(&(g_registery_mem_manager.lookaside_unicode.Lookaside), NULL, NULL, 0, g_registery_mem_manager.lookaside_unicode.buflen, 'objn', 0);
 
 	g_bRegistryManager = TRUE;
-		 
+	
 	status = CmRegisterCallback(registry_callback, &g_registery_mem_manager, &(g_registery_mem_manager.registry_callback_cookie));
 	if (NT_SUCCESS(status))
 	{
@@ -814,6 +814,7 @@ BOOLEAN DelInjectPathToReg( WCHAR* szDllPath)
 			}
 			else
 			{
+				ExFreePool(szTmp);
 				ExFreePool(pvpi);
 				return TRUE;
 			}
