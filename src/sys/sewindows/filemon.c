@@ -1,3 +1,4 @@
+//----------------------------------
 #include "main.h"
 #include "filemon.h"
 #include <strsafe.h>
@@ -66,7 +67,7 @@ sw_pre_diskctl_callback (
 
 	io_ctl_code = Data->Iopb->Parameters.DeviceIoControl.Common.IoControlCode;
 
-	if (io_ctl_code != IOCTL_DISK_SET_PARTITION_INFO && io_ctl_code != IOCTL_DISK_VERIFY && IOCTL_DISK_GET_DRIVE_GEOMETRY != io_ctl_code )
+	if (io_ctl_code != IOCTL_DISK_SET_PARTITION_INFO && io_ctl_code != IOCTL_DISK_VERIFY)
 	{
 		return FLT_PREOP_SUCCESS_NO_CALLBACK;
 	}
@@ -243,11 +244,7 @@ NTSTATUS sw_unload(FLT_FILTER_UNLOAD_FLAGS Flags)
 	g_is_proc_run = FALSE;
 	g_is_reg_run = FALSE;
 	g_is_svc_run = FALSE;
-//	g_is_watch_dll_inject = FALSE;
 	sw_uninit_minifliter(g_driver_obj);
-//	SleepImp(3);
-//	sw_uninit_procss(g_driver_obj);
-//	SleepImp(1);
 	sw_register_uninit(g_driver_obj);
 	
 
