@@ -67,7 +67,7 @@ sw_pre_diskctl_callback (
 
 	io_ctl_code = Data->Iopb->Parameters.DeviceIoControl.Common.IoControlCode;
 
-	if (io_ctl_code != IOCTL_DISK_SET_PARTITION_INFO && io_ctl_code != IOCTL_DISK_VERIFY && IOCTL_DISK_GET_DRIVE_GEOMETRY != io_ctl_code )
+	if (io_ctl_code != IOCTL_DISK_SET_PARTITION_INFO && io_ctl_code != IOCTL_DISK_VERIFY)
 	{
 		return FLT_PREOP_SUCCESS_NO_CALLBACK;
 	}
