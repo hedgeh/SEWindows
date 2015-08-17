@@ -55,11 +55,12 @@ BOOLEAN ScmDrvCtrl::Install(const TCHAR* lpszServiceName, const TCHAR* lpszDrive
 	}
 	UnInstall(lpszServiceName);
 	WIN32_FIND_DATA FindFileData;
-	if (FindFirstFileW(lpszDriverPath, &FindFileData) == INVALID_HANDLE_VALUE)
+	HANDLE hFind = FindFirstFileW(lpszDriverPath, &FindFileData);
+	if (hFind == INVALID_HANDLE_VALUE)
 	{
 		return FALSE;
 	}
-
+	FindClose(hFind);
 again:
 	hServiceMgr = OpenSCManager(NULL, NULL, SC_MANAGER_ALL_ACCESS);
 	if (hServiceMgr == NULL)

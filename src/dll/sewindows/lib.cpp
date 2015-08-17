@@ -146,6 +146,12 @@ BOOLEAN register_get_user_sid(WCHAR* sz_user_name)
 	{
 		if (pTokenUser != NULL)
 			free(pTokenUser);
+
+		if (hToken)
+		{
+			CloseHandle(hToken);
+			hToken = NULL;
+		}
 	}
 
 	return bResult;
@@ -371,6 +377,12 @@ BOOLEAN get_proc_user_by_pid(DWORD pid, WCHAR* sz_user_name)
 		if (hProcess)
 		{
 			CloseHandle(hProcess);
+		}
+
+		if (hToken)
+		{
+			CloseHandle(hToken);
+			hToken = NULL;
 		}
 	}
 
@@ -731,8 +743,8 @@ ULONG get_the_top_altitude()
 		p_info = (PFILTER_AGGREGATE_BASIC_INFORMATION)buffer;
 		if (FLTFL_AGGREGATE_INFO_IS_MINIFILTER == p_info->Flags)
 		{
-			/*StringCbCopy(sz_altitude, p_info->Type.MiniFilter.FilterAltitudeLength + sizeof(TCHAR), (TCHAR*)((ULONG_PTR)buffer + p_info->Type.MiniFilter.FilterAltitudeBufferOffset));
-			StringCbCopy(sz_service_name, p_info->Type.MiniFilter.FilterNameLength + sizeof(TCHAR), (TCHAR*)((ULONG_PTR)buffer + p_info->Type.MiniFilter.FilterNameBufferOffset));
+			StringCbCopy(sz_altitude, p_info->Type.MiniFilter.FilterAltitudeLength + sizeof(TCHAR), (TCHAR*)((ULONG_PTR)buffer + p_info->Type.MiniFilter.FilterAltitudeBufferOffset));
+			/*StringCbCopy(sz_service_name, p_info->Type.MiniFilter.FilterNameLength + sizeof(TCHAR), (TCHAR*)((ULONG_PTR)buffer + p_info->Type.MiniFilter.FilterNameBufferOffset));
 			if (_tcsnicmp(sz_service_name, _T("sewindows"), _tcslen(_T("sewindows"))) == 0)
 			{
 				delete_unprotected_sewin(sz_service_name);
@@ -744,8 +756,10 @@ ULONG get_the_top_altitude()
 	} while (ret == S_OK);
 	if (altitude == 0)
 	{
+		FilterFindClose(handle);
 		return  30000;
 	}
+	FilterFindClose(handle);
 	return  altitude + 10;
 }
 
