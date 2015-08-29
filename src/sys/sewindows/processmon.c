@@ -462,7 +462,7 @@ BOOLEAN  AcquireResourceExclusive ( __inout PERESOURCE Resource )
 	BOOLEAN ret;
 	KeEnterCriticalRegion();
 	ret = ExAcquireResourceExclusiveLite( Resource, TRUE );
-	KeLeaveCriticalRegion();
+//	KeLeaveCriticalRegion();
 	return ret;
 }
 
@@ -471,14 +471,14 @@ BOOLEAN  AcquireResourceShare ( __inout PERESOURCE Resource )
 	BOOLEAN ret;
 	KeEnterCriticalRegion();
 	ret = ExAcquireResourceSharedLite( Resource, TRUE );
-	KeLeaveCriticalRegion();
+//	KeLeaveCriticalRegion();
 	return ret;
 }
 
 
 VOID ReleaseResource( __inout PERESOURCE Resource )
 {
-	KeEnterCriticalRegion();
+//	KeEnterCriticalRegion();
 	ExReleaseResourceLite( Resource );
 	KeLeaveCriticalRegion();
 }
@@ -979,6 +979,12 @@ fake_NtCreateThread (
 	}
 
 	if (PsGetCurrentProcessId() == hDestProcessId)
+	{
+		InterlockedDecrement(&g_NtCreateThread_count);
+		return real_NtCreateThread( ThreadHandle, DesiredAccess, ObjectAttributes, ProcessHandle, ClientID, Context, StackInfo, CreateSuspended );
+	}
+
+	if(!is_pid_in_list(hDestProcessId))
 	{
 		InterlockedDecrement(&g_NtCreateThread_count);
 		return real_NtCreateThread( ThreadHandle, DesiredAccess, ObjectAttributes, ProcessHandle, ClientID, Context, StackInfo, CreateSuspended );
