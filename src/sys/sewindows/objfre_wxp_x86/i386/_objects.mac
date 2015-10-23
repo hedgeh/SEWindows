@@ -1,0 +1,20 @@
+
+
+386_OBJECTS=\
+ $(OBJ_PATH)\$O\main.obj \
+ $(OBJ_PATH)\$O\filemon.obj \
+ $(OBJ_PATH)\$O\processmon.obj \
+ $(OBJ_PATH)\$O\regmon.obj \
+ $(OBJ_PATH)\$O\lpc.obj \
+
+
+
+
+
+# lowercased
+BASEDIR=c:\winddk\7600.16385.1
+OBJECT_ROOT=c:\winddk\7600.16385.1
+MAKEDIR_LOWERCASE=c:\sewin\sewindows\src\sys\sewindows
+OBJ_PATH=c:\sewin\sewindows\src\sys\sewindows
+CONCURRENT_MIDL=0
+CONCURRENT_MANIFEST_BUILD=0
